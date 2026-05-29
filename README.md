@@ -976,6 +976,6 @@ Delete user borra datos financieros; hay que arreglarlo para que preserve el his
 No hay tests automatizados financieros.
 No hay migrations/versionado robusto mencionado, solo Prisma schema.
 No hay Docker/CI/CD/observabilidad.
-=======
+
 # CoopMarketplace
 >>>>>>> 87d4d07b4d47d42b5fa8822b215bcbc0da140add
