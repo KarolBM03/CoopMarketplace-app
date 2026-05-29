@@ -1,0 +1,334 @@
+import {
+  BarChart3,
+  Bell,
+  DollarSign,
+  ExternalLink,
+  Package,
+  ShoppingBag,
+  Wallet,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getNotificationsByUser } from "../../services/notification.service";
+import { getSellerSales } from "../../services/order.service";
+import { getSellerPayouts } from "../../services/payout.service";
+import { getSellerProducts } from "../../services/product.services";
+import { getWalletByUser } from "../../services/wallet.services";
+import { useAuthStore } from "../../store/auth.store";
+import { statusLabel } from "../../utils/statusLabels";
+
+export default function SellerDashboard() {
+  const user = useAuthStore.getState().user;
+
+  const [wallet, setWallet] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [sales, setSales] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const loadDashboard = async () => {
+    if (!user) return;
+
+    const [walletData, productData, salesData, payoutData, notificationData] =
+      await Promise.all([
+        getWalletByUser(user.id),
+        getSellerProducts(user.id),
+        getSellerSales(user.id),
+        getSellerPayouts(user.id),
+        getNotificationsByUser(user.id),
+      ]);
+
+    setWallet(walletData);
+    setProducts(Array.isArray(productData) ? productData : []);
+    setSales(Array.isArray(salesData) ? salesData : []);
+    setPayouts(Array.isArray(payoutData) ? payoutData : []);
+    setNotifications(Array.isArray(notificationData) ? notificationData : []);
+  };
+
+  const totalSales = sales.reduce(
+    (sum, sale) => sum + sale.price * sale.quantity,
+    0,
+  );
+
+  const pendingPayouts = payouts.filter(
+    (payout) => payout.status === "PENDING",
+  );
+  const pendingPayoutAmount = pendingPayouts.reduce(
+    (sum, payout) => sum + Number(payout.amount || 0),
+    0,
+  );
+
+  return (
+    <div className="px-5 py-8 sm:px-8 lg:px-10">
+      <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-emerald-600">
+              BIENVENIDO
+            </p>
+
+            <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
+              Hola, {user?.fullName || "vendedor"}
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
+              Revisa tus productos, ventas, retiros y notificaciones desde un
+              solo lugar.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-6 md:grid-cols-2 2xl:grid-cols-4">
+          <SummaryCard
+            title="Saldo disponible"
+            value={`RD$${wallet?.balance?.toLocaleString() || "0"}`}
+            detail="Fondos en tu billetera"
+            icon={Wallet}
+            highlight
+          />
+
+          <SummaryCard
+            title="Productos activos"
+            value={String(products.length)}
+            detail="Publicados en marketplace"
+            icon={Package}
+          />
+
+          <SummaryCard
+            title="Ventas totales"
+            value={`RD$${totalSales.toLocaleString()}`}
+            detail={`${sales.length} ventas registradas`}
+            icon={ShoppingBag}
+            highlight
+          />
+
+          <SummaryCard
+            title="Retiros pendientes"
+            value={String(pendingPayouts.length)}
+            detail={`RD$${pendingPayoutAmount.toLocaleString()} esperando aprobacion`}
+            icon={DollarSign}
+            to="/seller/payouts"
+            warning
+          />
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Panel
+          title="Ultimas ventas"
+          description="Ventas recientes de tus productos."
+          icon={ShoppingBag}
+        >
+          {sales.length === 0 ? (
+            <EmptyState text="Todavia no tienes ventas registradas." />
+          ) : (
+            sales.slice(0, 5).map((sale) => (
+              <div
+                key={sale.id}
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-black text-slate-950">
+                    {sale.product?.title || "Producto"}
+                  </p>
+                  <p className="text-sm font-medium text-slate-500">
+                    Cantidad: {sale.quantity}
+                  </p>
+                </div>
+
+                <p className="shrink-0 font-black text-emerald-600">
+                  RD${(sale.price * sale.quantity).toLocaleString()}
+                </p>
+              </div>
+            ))
+          )}
+        </Panel>
+
+        <Panel
+          title="Notificaciones"
+          description="Alertas recientes de tu cuenta."
+          icon={Bell}
+        >
+          {notifications.length === 0 ? (
+            <EmptyState text="No tienes notificaciones nuevas." />
+          ) : (
+            notifications.slice(0, 5).map((notification) => (
+              <div
+                key={notification.id}
+                className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+              >
+                <p className="font-black text-slate-950">
+                  {notification.title}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  {notification.message}
+                </p>
+              </div>
+            ))
+          )}
+        </Panel>
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-500 text-black">
+              <BarChart3 className="h-6 w-6" />
+            </div>
+
+            <h2 className="mt-6 text-2xl font-black">Retiros pendientes</h2>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+              Solicitudes que esperan aprobacion del administrador.
+            </p>
+          </div>
+
+          <Link
+            to="/seller/payouts"
+            className="inline-flex w-fit items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-black text-black transition hover:bg-emerald-400"
+          >
+            Ver retiros
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="mt-6 grid gap-3">
+          {pendingPayouts.length === 0 ? (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm font-semibold text-slate-300">
+              No tienes retiros pendientes.
+            </div>
+          ) : (
+            pendingPayouts.slice(0, 3).map((payout) => (
+              <div
+                key={payout.id}
+                className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-black text-white">Retiro solicitado</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {new Date(payout.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="text-left sm:text-right">
+                  <p className="text-xl font-black text-emerald-400">
+                    RD${Number(payout.amount || 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm font-bold text-yellow-300">
+                    {statusLabel("PENDING")}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  value,
+  detail,
+  icon: Icon,
+  highlight = false,
+  warning = false,
+  to,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  icon: React.ElementType;
+  highlight?: boolean;
+  warning?: boolean;
+  to?: string;
+}) {
+  const valueClass = warning
+    ? "text-yellow-500"
+    : highlight
+      ? "text-emerald-600"
+      : "text-slate-950";
+
+  const content = (
+    <>
+      <div className="flex items-center justify-between gap-4">
+        <div className="grid h-11 w-11 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+          <Icon className="h-5 w-5" />
+        </div>
+
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-500 ring-1 ring-slate-200">
+          Actual
+        </span>
+      </div>
+
+      <p className="mt-8 text-sm font-bold text-slate-500">{title}</p>
+      <h2
+        className={`mt-3 break-words text-[clamp(1.9rem,2.6vw,2.8rem)] font-black leading-none ${valueClass}`}
+      >
+        {value}
+      </h2>
+      <p className="mt-4 text-sm font-medium leading-6 text-slate-400">
+        {detail}
+      </p>
+    </>
+  );
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className="min-h-[190px] rounded-2xl border border-slate-200 bg-slate-50 p-6 transition hover:border-emerald-200 hover:bg-emerald-50/50 hover:shadow-sm"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="min-h-[190px] rounded-2xl border border-slate-200 bg-slate-50 p-6">
+      {content}
+    </div>
+  );
+}
+
+function Panel({
+  title,
+  description,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">{title}</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">
+            {description}
+          </p>
+        </div>
+
+        <Icon className="h-6 w-6 text-emerald-600" />
+      </div>
+
+      <div className="grid gap-4">{children}</div>
+    </div>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm font-semibold text-slate-500">
+      {text}
+    </div>
+  );
+}

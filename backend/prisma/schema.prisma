@@ -1,0 +1,306 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
+}
+
+model User {
+  id       String @id @default(uuid())
+  fullName String
+  email    String @unique
+  password String
+
+  phone    String?
+  isVerified Boolean @default(false)
+  otpCode  String? 
+  otpExpiresAt DateTime?
+  refreshToken  String?
+
+  storeName   String?
+  mainCategory String?
+  city         String?
+  documentId   String?
+  bankAccount  String?
+  identityImageUrl  String?
+  sellerStatus   String? @default("PENDING")
+  acceptedTerms  Boolean @default(false)
+
+  role Role @default(CUSTOMER)
+  isBlocked Boolean @default(false)
+  products Product[]
+  financings Financing[]
+  notifications Notification[]
+  ledgerEntries LedgerEntry[]
+  transactions Transaction[]
+  wallet Wallet?
+  orders Order[]
+  payouts Payout[]
+  loans Loan[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
+}
+
+model Product {
+  id String @id @default(uuid())
+  title       String
+  description String
+  price       Float
+  stock Int
+  imageUrl String?
+  isFinanced Boolean @default(false)
+  isActive   Boolean @default(true)
+  financings Financing[]
+  orderItems OrderItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sellerId String
+  seller   User   @relation(fields: [sellerId], references: [id])
+  category String @default("Otros")
+
+  @@index([isActive, category])
+  @@index([sellerId, isActive])
+  @@index([price])
+  @@index([createdAt])
+}
+
+model Financing {
+  id         String @id @default(uuid())
+  customerId String
+  cedula     String?
+  income     Float?
+  company    String?
+  phone      String?
+  address    String?
+  productId  String
+  totalAmount   Float
+  downPayment   Float
+  remainingDebt Float
+  months         Int
+  monthlyPayment Float
+  status FinancingStatus @default(PENDING)
+  externalLoanId String?
+  externalStatus String?
+  externalReference String?
+  cooperativeResponse Json?
+  approvedAt DateTime?
+  rejectedAt DateTime?
+  rejectionReason String?
+  createdAt DateTime @default(now())
+  customer User    @relation(fields: [customerId], references: [id])
+  product  Product @relation(fields: [productId], references: [id])
+  installments Installment[]
+
+  @@index([customerId, status])
+  @@index([productId, status])
+  @@index([externalLoanId])
+  @@index([externalReference])
+}
+
+model Installment {
+  id          String @id @default(uuid())
+  financingId String
+  number Int
+  amount  Float
+  dueDate DateTime
+  paid   Boolean   @default(false)
+  paidAt DateTime?
+  createdAt DateTime @default(now())
+  financing Financing @relation(fields: [financingId], references: [id])
+  status String @default("PENDING")
+}
+
+enum FinancingStatus {
+  PENDING
+  APPROVED_BY_COOPERATIVE
+  WAITING_SELLER_APPROVAL
+  WAITING_DOWN_PAYMENT
+  ACTIVE
+  COMPLETED
+  LATE
+  APPROVED
+  REJECTED
+}
+
+model Notification {
+  id String @id @default(uuid())
+  userId String
+  title   String
+  message String
+  read Boolean @default(false)
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id])
+}
+
+model LedgerEntry {
+  id String @id @default(uuid())
+  userId String
+  type LedgerType
+  amount Float
+  reference String
+  description String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum LedgerType {
+  CREDIT
+  DEBIT
+}
+
+model Transaction {
+
+  id String @id @default(uuid())
+  userId String
+  amount Float
+  type TransactionType
+  status TransactionStatus
+  reference String?
+  description String?
+  createdAt DateTime @default(now())
+  idempotencyKey String? @unique
+  providerReference String?
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([reference])
+  @@index([providerReference])
+}
+
+enum TransactionType {
+  PAYMENT
+  REFUND
+  WITHDRAW
+  DEPOSIT
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Wallet {
+  id String @id @default(uuid())
+  userId String @unique
+  balance Float @default(0)
+  frozenBalance Float @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id String @id @default(uuid())
+  customerId String
+  totalAmount Float
+  status OrderStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  customer User @relation(fields: [customerId], references: [id])
+  items OrderItem[]
+}
+
+model OrderItem {
+  id String @id @default(uuid())
+  orderId String
+  productId String
+  quantity Int
+  price Float
+  order Order @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  COMPLETED
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+  userId String?
+  action String
+  entity String
+  entityId String
+  description String
+  metadata Json?
+  ip String?
+  createdAt DateTime @default(now())
+}
+
+model FraudAlert {
+  id String @id @default(uuid())
+  userId String
+  reason String
+  riskLevel RiskLevel
+  resolved Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Payout {
+  id        String   @id @default(cuid())
+  sellerId  String
+  amount    Float
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  idempotencyKey String? @unique
+
+  seller User @relation(fields: [sellerId], references: [id])
+
+  @@index([sellerId, status])
+  @@index([status])
+}
+
+model Loan {
+  id                 String   @id @default(uuid())
+  userId             String
+
+  amount             Float
+  months             Int
+  annualInterestRate Float
+
+  monthlyPayment     Float
+  totalPayment       Float
+  totalInterest      Float
+
+  income             Float
+  company            String
+  documentId         String
+
+  score              Int
+  status             String   @default("PENDING")
+  externalLoanId     String?
+  externalStatus     String?
+  externalReference  String?
+  cooperativeResponse Json?
+  approvedAt         DateTime?
+  rejectedAt         DateTime?
+  rejectionReason    String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user               User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([externalLoanId])
+  @@index([externalReference])
+}

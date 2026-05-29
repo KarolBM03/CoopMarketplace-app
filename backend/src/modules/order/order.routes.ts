@@ -1,0 +1,28 @@
+import { Router } from "express";
+import { create } from "./order.controller";
+import { updateStatus } from "./order.controller";
+import { cancel } from "./order.controller";
+import { complete } from "./order.controller";
+import { getCustomerOrders } from "./order.controller";
+import { getSalesBySeller } from "./order.controller";
+import { protect } from "../../middlewares/auth.middleware";
+import { authorize } from "../../middlewares/role.middleware";
+import { allowSelfOrAdmin } from "../../middlewares/ownership.middleware";
+
+const router = Router();
+
+router.use(protect);
+
+router.post("/", authorize("CUSTOMER", "ADMIN"), create);
+router.get("/customer/:customerId", allowSelfOrAdmin("customerId"), getCustomerOrders);
+router.get(
+  "/seller/:sellerId/sales",
+  authorize("SELLER", "ADMIN"),
+  allowSelfOrAdmin("sellerId"),
+  getSalesBySeller,
+);
+router.patch("/:id/status", authorize("ADMIN"), updateStatus);
+router.patch("/:id/cancel", authorize("CUSTOMER", "ADMIN"), cancel);
+router.patch("/:id/complete", authorize("SELLER", "ADMIN"), complete);
+
+export default router;
