@@ -164,7 +164,6 @@ export default function CustomerWalletPage() {
                     <p className="font-black text-slate-900">
                       {transaction.type === "DEPOSIT" && "Deposito"}
                       {transaction.type === "PAYMENT" && "Pago"}
-                      {transaction.type === "WITHDRAW" && "Retiro"}
                       {transaction.type === "REFUND" && "Reembolso"}
                     </p>
 

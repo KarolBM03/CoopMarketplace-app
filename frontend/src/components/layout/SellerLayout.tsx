@@ -20,7 +20,6 @@ const navItems = [
   { to: "/seller/products", label: "Productos", icon: Package },
   { to: "/seller/sales", label: "Ventas", icon: ShoppingBag },
   { to: "/seller/wallet", label: "Billetera", icon: Wallet },
-  { to: "/seller/payouts", label: "Retiros", icon: Wallet },
   {
     to: "/seller/financing-requests",
     label: "Solicitudes",

@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   Search,
   ShieldCheck,
-  Trash2,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -11,7 +10,6 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
   blockUser,
-  deleteUser,
   getAdminUsers,
   unblockUser,
 } from "../../services/admin.services";
@@ -41,7 +39,6 @@ type AdminUser = {
   products?: unknown[];
   orders?: unknown[];
   financings?: unknown[];
-  payouts?: Array<{ status?: string }>;
 };
 
 const roleLabels: Record<AdminUser["role"], string> = {
@@ -120,46 +117,6 @@ export default function AdminUsersPage() {
         error.response?.data?.message || "Error desbloqueando usuario",
       );
     }
-  };
-
-  const handleDelete = async (userId: string, userName: string) => {
-    toast(
-      (t) => (
-        <div className="grid gap-3">
-          <p className="font-bold text-slate-900">
-            Eliminar a {userName}? Esta accion borrara sus datos relacionados.
-          </p>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => toast.dismiss(t.id)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                toast.dismiss(t.id);
-                try {
-                  await deleteUser(userId);
-                  toast.success("Usuario eliminado");
-                  loadUsers();
-                } catch (error: any) {
-                  toast.error(
-                    error.response?.data?.message || "Error eliminando usuario",
-                  );
-                }
-              }}
-              className="rounded-lg bg-red-500 px-3 py-2 text-sm font-bold text-white"
-            >
-              Eliminar
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 6000 },
-    );
   };
 
   return (
@@ -245,9 +202,6 @@ export default function AdminUsersPage() {
               ) : (
                 filteredUsers.map((user) => {
                   const isSeller = user.role === "SELLER";
-                  const pendingPayouts =
-                    user.payouts?.filter((payout) => payout.status === "PENDING")
-                      .length || 0;
 
                   return (
                     <tr key={user.id} className="transition hover:bg-slate-50">
@@ -353,7 +307,6 @@ export default function AdminUsersPage() {
                         <div className="grid gap-1 text-sm font-semibold text-slate-600">
                           <p>Productos: {user.products?.length || 0}</p>
                           <p>Ordenes: {user.orders?.length || 0}</p>
-                          <p>Retiros pendientes: {pendingPayouts}</p>
                         </div>
                       </td>
 
@@ -402,19 +355,6 @@ export default function AdminUsersPage() {
                               <Ban className="h-4 w-4" />
                             </button>
                           )}
-
-                          <button
-                            onClick={() =>
-                              handleDelete(
-                                user.id,
-                                user.fullName || "este usuario",
-                              )
-                            }
-                            className="grid h-10 w-10 place-items-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-100"
-                            title="Eliminar usuario"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
                         </div>
                       </td>
                     </tr>

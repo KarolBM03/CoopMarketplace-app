@@ -162,7 +162,7 @@ export default function RegisterPage() {
                   {...register("documentId")}
                 />
                 <FormInput
-                  placeholder="Cuenta bancaria para retiros"
+                  placeholder="Cuenta bancaria"
                   error={errors.bankAccount?.message}
                   {...register("bankAccount")}
                 />

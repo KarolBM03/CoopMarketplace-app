@@ -45,12 +45,6 @@ export const unblockUser = async (userId: string) => {
   return response.data;
 };
 
-export const deleteUser = async (userId: string) => {
-  const response = await api.delete(`/admin/users/${userId}`);
-
-  return response.data;
-};
-
 export const getSellers = async () => {
   const response = await api.get("/admin/sellers");
   return response.data;

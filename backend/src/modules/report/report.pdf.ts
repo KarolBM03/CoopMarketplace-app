@@ -21,8 +21,6 @@ export const generateFinancialPDF = (report: any) => {
   const cards = [
     ["Pagos", formatMoney(report.totals?.payments)],
     ["Depósitos", formatMoney(report.totals?.deposits)],
-    ["Retiros", formatMoney(report.totals?.withdrawals)],
-    ["Pagos aprobados", formatMoney(report.totals?.approvedPayouts)],
     ["Financiamientos", formatMoney(report.totals?.financingTotal)],
     ["Fraudes detectados", report.counts?.fraudAlerts || 0],
   ];
@@ -57,7 +55,6 @@ export const generateFinancialPDF = (report: any) => {
 
   const stats = [
     ["Transacciones", report.counts?.transactions || 0],
-    ["Retiros", report.counts?.payouts || 0],
     ["Financiamientos", report.counts?.financings || 0],
     ["Fraudes", report.counts?.fraudAlerts || 0],
   ];

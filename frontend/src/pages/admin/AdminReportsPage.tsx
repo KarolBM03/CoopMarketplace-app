@@ -106,14 +106,6 @@ export default function AdminReportsPage() {
           value={`RD$${(totals.deposits || 0).toLocaleString()}`}
         />
         <Card
-          title="Retiros"
-          value={`RD$${(totals.withdrawals || 0).toLocaleString()}`}
-        />
-        <Card
-          title="Pagos aprobados"
-          value={`RD$${(totals.approvedPayouts || 0).toLocaleString()}`}
-        />
-        <Card
           title="Financiamientos"
           value={`RD$${(totals.financingTotal || 0).toLocaleString()}`}
         />
@@ -125,7 +117,6 @@ export default function AdminReportsPage() {
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <Stat label="Transacciones" value={counts.transactions || 0} />
-          <Stat label="Retiros" value={counts.payouts || 0} />
           <Stat label="Financiamientos" value={counts.financings || 0} />
           <Stat label="Fraudes detectados" value={counts.fraudAlerts || 0} />
         </div>

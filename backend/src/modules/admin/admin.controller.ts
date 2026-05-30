@@ -3,7 +3,7 @@ import { getPlatformMetrics } from "./admin.service";
 import { generateFinancialReport } from "./admin.service";
 import { getUsers } from "./admin.service";
 import { getFraudAlerts } from "./admin.service";
-import { blockUser, deleteUser, unblockUser } from "./admin.service";
+import { blockUser, unblockUser } from "./admin.service";
 import { approveSeller, rejectSeller, getSellers } from "./admin.service";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 
@@ -70,27 +70,6 @@ export const unblockUserController = async (req: AuthRequest, res: Response) => 
     const user = await unblockUser(req.params.userId as string, req.user?.id);
 
     res.json(user);
-  } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
-  }
-};
-
-export const deleteUserController = async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.params.userId as string;
-
-    if (req.user?.id === userId) {
-      throw new Error("No puedes eliminar tu propio usuario");
-    }
-
-    const user = await deleteUser(userId, req.user?.id);
-
-    res.json({
-      message: "Usuario eliminado correctamente",
-      user,
-    });
   } catch (error: any) {
     res.status(400).json({
       message: error.message,

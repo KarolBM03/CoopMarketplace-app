@@ -24,10 +24,8 @@ import SellerDashboardHome from "../pages/seller/SellerDashboard";
 import SellerProductsPage from "../pages/seller/SellerProductsPage";
 import SellerSalesPage from "../pages/seller/SellerSalesPage";
 import SellerWalletPage from "../pages/seller/SellerWalletPage";
-import SellerPayoutsPage from "../pages/seller/SellerPayoutsPage";
 import SellerNotificationsPage from "../pages/seller/SellerNotification";
 import SellerFinancingRequestsPage from "../pages/seller/SellerFinancingRequestsPage";
-import AdminPayoutsPage from "../pages/admin/AdminPayoutsPage";
 import AdminFinancingsPage from "../pages/admin/AdminFinancingsPage";
 import AdminReportsPage from "../pages/admin/AdminReportsPage";
 import VerifyOTPPage from "../pages/auth/VerifyOTPPage";
@@ -50,7 +48,6 @@ export default function AppRoutes() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="sellers" element={<AdminSellersPage />} />
-          <Route path="payouts" element={<AdminPayoutsPage />} />
           <Route path="financings" element={<AdminFinancingsPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
         </Route>
@@ -66,7 +63,6 @@ export default function AppRoutes() {
           <Route path="products" element={<SellerProductsPage />} />
           <Route path="sales" element={<SellerSalesPage />} />
           <Route path="wallet" element={<SellerWalletPage />} />
-          <Route path="payouts" element={<SellerPayoutsPage />} />
           <Route
             path="financing-requests"
             element={<SellerFinancingRequestsPage />}

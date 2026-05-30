@@ -1,5 +1,4 @@
 import prisma from "../../config/prisma";
-import { approvePayout } from "../payout/payout.service";
 import {
   getTransactionStatus,
   sendLoanApplication,
@@ -12,36 +11,6 @@ export const getQueueHealth = () => ({
   redisConfigured: Boolean(process.env.REDIS_URL),
   bullMQReady: queueDriver === "bullmq" && Boolean(process.env.REDIS_URL),
 });
-
-export const processPayoutQueue = async () => {
-  const pendingPayouts = await prisma.payout.findMany({
-    where: {
-      status: "PENDING",
-    },
-  });
-
-  const results = [];
-
-  for (const payout of pendingPayouts) {
-    try {
-      const approved = await approvePayout(payout.id);
-
-      results.push({
-        payoutId: payout.id,
-        status: "PROCESSED",
-        result: approved,
-      });
-    } catch (error: any) {
-      results.push({
-        payoutId: payout.id,
-        status: "FAILED",
-        error: error.message,
-      });
-    }
-  }
-
-  return results;
-};
 
 export const processLoanQueue = async () => {
   const pendingLoans = await prisma.loan.findMany({

@@ -51,16 +51,3 @@ export const financingLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-export const payoutLimiter = rateLimit({
-  windowMs: 30 * 60 * 1000,
-
-  max: 3,
-
-  message: {
-    message: "Demasiadas solicitudes de retiro.",
-  },
-
-  standardHeaders: true,
-  legacyHeaders: false,
-});

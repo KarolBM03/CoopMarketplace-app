@@ -3,7 +3,7 @@ import prisma from "../config/prisma";
 interface TransactionData {
   userId: string;
   amount: number;
-  type: "PAYMENT" | "REFUND" | "WITHDRAW" | "DEPOSIT";
+  type: "PAYMENT" | "REFUND" | "DEPOSIT";
   status: "PENDING" | "SUCCESS" | "FAILED";
   reference?: string;
   description?: string;

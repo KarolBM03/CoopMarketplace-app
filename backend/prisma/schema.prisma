@@ -43,7 +43,6 @@ model User {
   transactions Transaction[]
   wallet Wallet?
   orders Order[]
-  payouts Payout[]
   loans Loan[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -253,20 +252,6 @@ enum RiskLevel {
   LOW
   MEDIUM
   HIGH
-}
-
-model Payout {
-  id        String   @id @default(cuid())
-  sellerId  String
-  amount    Float
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  idempotencyKey String? @unique
-
-  seller User @relation(fields: [sellerId], references: [id])
-
-  @@index([sellerId, status])
-  @@index([status])
 }
 
 model Loan {

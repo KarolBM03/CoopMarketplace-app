@@ -81,18 +81,10 @@ export interface Transaction {
   id: string;
   userId: string;
   amount: number;
-  type: "PAYMENT" | "REFUND" | "WITHDRAW" | "DEPOSIT";
+  type: "PAYMENT" | "REFUND" | "DEPOSIT";
   status: "PENDING" | "SUCCESS" | "FAILED";
   reference?: string | null;
   description?: string | null;
-  createdAt: string;
-}
-
-export interface Payout {
-  id: string;
-  sellerId: string;
-  amount: number;
-  status: "PENDING" | "APPROVED" | "REJECTED" | string;
   createdAt: string;
 }
 

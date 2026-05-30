@@ -23,10 +23,6 @@ export const generateFinancialReport = async ({
     where: dateFilter,
   });
 
-  const payouts = await prisma.payout.findMany({
-    where: dateFilter,
-  });
-
   const financings = await prisma.financing.findMany({
     where: dateFilter,
   });
@@ -43,14 +39,6 @@ export const generateFinancialReport = async ({
     .filter((transaction) => transaction.type === "DEPOSIT")
     .reduce((sum, transaction) => sum + transaction.amount, 0);
 
-  const withdrawals = transactions
-    .filter((transaction) => transaction.type === "WITHDRAW")
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
-
-  const approvedPayouts = payouts
-    .filter((payout) => payout.status === "APPROVED")
-    .reduce((sum, payout) => sum + payout.amount, 0);
-
   const financingTotal = financings.reduce(
     (sum, financing) => sum + financing.totalAmount,
     0,
@@ -65,14 +53,11 @@ export const generateFinancialReport = async ({
     totals: {
       payments,
       deposits,
-      withdrawals,
-      approvedPayouts,
       financingTotal,
     },
 
     counts: {
       transactions: transactions.length,
-      payouts: payouts.length,
       financings: financings.length,
       fraudAlerts: fraudAlerts.length,
     },

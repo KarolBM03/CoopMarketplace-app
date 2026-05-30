@@ -46,13 +46,6 @@ export const generateFinancialExcel = async (report: any) => {
   const rows = [
     ["Pagos", money(report.totals?.payments), "Monto", generatedAt],
     ["Depósitos", money(report.totals?.deposits), "Monto", generatedAt],
-    ["Retiros", money(report.totals?.withdrawals), "Monto", generatedAt],
-    [
-      "Pagos aprobados",
-      money(report.totals?.approvedPayouts),
-      "Monto",
-      generatedAt,
-    ],
     [
       "Financiamientos",
       money(report.totals?.financingTotal),
@@ -62,12 +55,6 @@ export const generateFinancialExcel = async (report: any) => {
     [
       "Transacciones",
       report.counts?.transactions || 0,
-      "Cantidad",
-      generatedAt,
-    ],
-    [
-      "Retiros solicitados",
-      report.counts?.payouts || 0,
       "Cantidad",
       generatedAt,
     ],

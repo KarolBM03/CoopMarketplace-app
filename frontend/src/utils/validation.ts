@@ -85,8 +85,3 @@ export const financingSchema = z.object({
 export const walletRechargeSchema = z.object({
   amount: moneySchema,
 });
-
-export const payoutSchema = z.object({
-  amount: moneySchema,
-});
-

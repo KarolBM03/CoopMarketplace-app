@@ -1,7 +1,6 @@
 import {
   BarChart3,
   Bell,
-  DollarSign,
   ExternalLink,
   Package,
   ShoppingBag,
@@ -11,11 +10,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getNotificationsByUser } from "../../services/notification.service";
 import { getSellerSales } from "../../services/order.service";
-import { getSellerPayouts } from "../../services/payout.service";
 import { getSellerProducts } from "../../services/product.services";
 import { getWalletByUser } from "../../services/wallet.services";
 import { useAuthStore } from "../../store/auth.store";
-import { statusLabel } from "../../utils/statusLabels";
 
 export default function SellerDashboard() {
   const user = useAuthStore.getState().user;
@@ -23,7 +20,6 @@ export default function SellerDashboard() {
   const [wallet, setWallet] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
-  const [payouts, setPayouts] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
@@ -33,32 +29,22 @@ export default function SellerDashboard() {
   const loadDashboard = async () => {
     if (!user) return;
 
-    const [walletData, productData, salesData, payoutData, notificationData] =
+    const [walletData, productData, salesData, notificationData] =
       await Promise.all([
         getWalletByUser(user.id),
         getSellerProducts(user.id),
         getSellerSales(user.id),
-        getSellerPayouts(user.id),
         getNotificationsByUser(user.id),
       ]);
 
     setWallet(walletData);
     setProducts(Array.isArray(productData) ? productData : []);
     setSales(Array.isArray(salesData) ? salesData : []);
-    setPayouts(Array.isArray(payoutData) ? payoutData : []);
     setNotifications(Array.isArray(notificationData) ? notificationData : []);
   };
 
   const totalSales = sales.reduce(
     (sum, sale) => sum + sale.price * sale.quantity,
-    0,
-  );
-
-  const pendingPayouts = payouts.filter(
-    (payout) => payout.status === "PENDING",
-  );
-  const pendingPayoutAmount = pendingPayouts.reduce(
-    (sum, payout) => sum + Number(payout.amount || 0),
     0,
   );
 
@@ -76,8 +62,8 @@ export default function SellerDashboard() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
-              Revisa tus productos, ventas, retiros y notificaciones desde un
-              solo lugar.
+              Revisa tus productos, ventas y notificaciones desde un solo
+              lugar.
             </p>
           </div>
         </div>
@@ -107,12 +93,11 @@ export default function SellerDashboard() {
           />
 
           <SummaryCard
-            title="Retiros pendientes"
-            value={String(pendingPayouts.length)}
-            detail={`RD$${pendingPayoutAmount.toLocaleString()} esperando aprobacion`}
-            icon={DollarSign}
-            to="/seller/payouts"
-            warning
+            title="Notificaciones"
+            value={String(notifications.length)}
+            detail="Alertas recientes de tu cuenta"
+            icon={Bell}
+            to="/seller/notifications"
           />
         </div>
       </section>
@@ -180,51 +165,33 @@ export default function SellerDashboard() {
               <BarChart3 className="h-6 w-6" />
             </div>
 
-            <h2 className="mt-6 text-2xl font-black">Retiros pendientes</h2>
+            <h2 className="mt-6 text-2xl font-black">Resumen de actividad</h2>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              Solicitudes que esperan aprobacion del administrador.
+              Accesos rapidos para gestionar tu tienda y revisar los
+              movimientos recientes.
             </p>
           </div>
 
           <Link
-            to="/seller/payouts"
+            to="/seller/wallet"
             className="inline-flex w-fit items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-black text-black transition hover:bg-emerald-400"
           >
-            Ver retiros
+            Ver billetera
             <ExternalLink className="h-4 w-4" />
           </Link>
         </div>
 
         <div className="mt-6 grid gap-3">
-          {pendingPayouts.length === 0 ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm font-semibold text-slate-300">
-              No tienes retiros pendientes.
-            </div>
-          ) : (
-            pendingPayouts.slice(0, 3).map((payout) => (
-              <div
-                key={payout.id}
-                className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="font-black text-white">Retiro solicitado</p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    {new Date(payout.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-
-                <div className="text-left sm:text-right">
-                  <p className="text-xl font-black text-emerald-400">
-                    RD${Number(payout.amount || 0).toLocaleString()}
-                  </p>
-                  <p className="text-sm font-bold text-yellow-300">
-                    {statusLabel("PENDING")}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
+          <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm font-semibold text-slate-300">
+            Productos activos: {products.length}
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm font-semibold text-slate-300">
+            Ventas completadas: {sales.length}
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm font-semibold text-slate-300">
+            Saldo disponible: RD${wallet?.balance?.toLocaleString() || "0"}
+          </div>
         </div>
       </section>
     </div>

@@ -7,7 +7,6 @@ import {
   CreditCard,
   FileText,
   Users,
-  Wallet,
 } from "lucide-react";
 import { useEffect } from "react";
 import { socket } from "../../socket";
@@ -19,7 +18,6 @@ const navItems = [
   { to: "/admin", label: "Dashboard", icon: Home, end: true },
   { to: "/admin/users", label: "Usuarios", icon: Users },
   { to: "/admin/sellers", label: "Vendedores", icon: ShieldCheck },
-  { to: "/admin/payouts", label: "Retiros", icon: Wallet },
   { to: "/admin/financings", label: "Financiamientos", icon: CreditCard },
   { to: "/admin/reports", label: "Reportes", icon: FileText },
 ];
@@ -119,9 +117,9 @@ export default function AdminLayout() {
 
             <div className="ml-4 flex items-center gap-3">
               <Link
-                to="/admin/payouts"
+                to="/admin/financings"
                 className="relative grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
-                aria-label="Retiros pendientes"
+                aria-label="Notificaciones administrativas"
               >
                 <Bell className="h-5 w-5" />
                 <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-emerald-500" />

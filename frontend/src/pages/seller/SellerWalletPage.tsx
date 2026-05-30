@@ -106,9 +106,7 @@ export default function SellerWalletPage() {
                         ? "Deposito"
                         : transaction.type === "PAYMENT"
                           ? "Pago"
-                          : transaction.type === "WITHDRAW"
-                            ? "Retiro"
-                            : "Reembolso")}
+                          : "Reembolso")}
                   </p>
                   <p className="mt-1 text-sm text-slate-400">
                     {new Date(transaction.createdAt).toLocaleDateString()}

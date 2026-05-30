@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   approveSellerController,
-  deleteUserController,
   getSellersController,
   metrics,
   rejectSellerController,
@@ -23,7 +22,6 @@ router.get("/fraud-alerts", getAllFraudAlerts);
 router.get("/users", getAllUsers);
 router.patch("/users/:userId/block", blockUserController);
 router.patch("/users/:userId/unblock", unblockUserController);
-router.delete("/users/:userId", deleteUserController);
 router.patch("/sellers/:userId/approve", approveSellerController);
 router.patch("/sellers/:userId/reject", rejectSellerController);
 router.get("/sellers", getSellersController);
