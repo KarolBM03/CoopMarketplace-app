@@ -1,8 +1,7 @@
 import prisma from "../../config/prisma";
-import { createWallet } from "../../services/wallet.service";
-import { createLedgerEntry } from "../../services/ledger.service";
-import { createTransaction } from "../../services/transaction.service";
 import { createNotification } from "../../services/notification.service";
+import { createAuditLog } from "../../services/audit.service";
+import { createPaymentLink } from "../cooperative/cooperative.service";
 
 interface OrderItemData {
   productId: string;
@@ -51,14 +50,14 @@ export const createOrder = async ({ customerId, items }: CreateOrderData) => {
       },
     });
 
-    const subtotal = product.price * item.quantity;
+    const subtotal = Number(product.price) * item.quantity;
 
     totalAmount += subtotal;
 
     orderItemsData.push({
       productId: product.id,
       quantity: item.quantity,
-      price: product.price,
+      price: Number(product.price),
     });
   }
 
@@ -77,10 +76,95 @@ export const createOrder = async ({ customerId, items }: CreateOrderData) => {
 
   return order;
 };
-export const completeOrder = async (orderId: string) => {
+
+export const getOrderCooperativePaymentLink = async (orderId: string, actorId?: string) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!order) {
+    throw new Error("Orden no encontrada");
+  }
+
+  if (actorId && order.customerId !== actorId) {
+    const actor = await prisma.user.findUnique({ where: { id: actorId } });
+    if (actor?.role !== "ADMIN") {
+      throw new Error("No puedes pagar esta orden");
+    }
+  }
+
+  if (order.status !== "PENDING") {
+    throw new Error("La orden no esta pendiente de pago");
+  }
+
+  const paymentLink = await createPaymentLink({
+    reference: order.id,
+    type: "ORDER",
+    amount: Number(order.totalAmount),
+    currency: order.currency,
+  });
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      externalPaymentId: paymentLink.externalPaymentId,
+      externalStatus: paymentLink.status || "PAYMENT_LINK_CREATED",
+      cooperativeResponse: paymentLink,
+    },
+  });
+
+  await createAuditLog({
+    userId: actorId || order.customerId,
+    action: "ORDER_PAYMENT_LINK_CREATED",
+    entity: "ORDER",
+    entityId: order.id,
+    description: "Link de pago creado en CoopHispanica",
+    metadata: paymentLink,
+  });
+
+  return paymentLink;
+};
+
+export const confirmCooperativeOrderPayment = async ({
+  orderId,
+  externalReference,
+  cooperativeResponse,
+}: {
+  orderId: string;
+  externalReference?: string;
+  cooperativeResponse?: unknown;
+}) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
+      customer: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
+      shipments: true,
+    },
+  });
+
+  if (!order) {
+    throw new Error("Orden no encontrada");
+  }
+
+  if (order.status === "PAID" || order.status === "COMPLETED") {
+    return order;
+  }
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      status: "PAID",
+      externalReference,
+      externalStatus: "PAYMENT_CONFIRMED",
+      cooperativeResponse: cooperativeResponse as any,
+    },
+    include: {
+      customer: true,
       items: {
         include: {
           product: true,
@@ -89,70 +173,63 @@ export const completeOrder = async (orderId: string) => {
     },
   });
 
-  if (!order) {
-    throw new Error("Orden no encontrada");
-  }
+  await createNotification(
+    order.customerId,
+    "Orden pagada",
+    `CoopHispanica confirmo el pago de tu orden RD$${Number(order.totalAmount).toLocaleString()}.`,
+  );
 
-  if (order.status !== "PAID") {
-    throw new Error("Solo puedes completar una orden pagada");
-  }
+  const sellerIds = new Set(order.items.map((item) => item.product.sellerId));
 
-  for (const item of order.items) {
-    const sellerId = item.product.sellerId;
-    const amount = item.price * item.quantity;
-
-    let sellerWallet = await prisma.wallet.findUnique({
-      where: { userId: sellerId },
-    });
-
-    if (!sellerWallet) {
-      sellerWallet = await createWallet(sellerId);
-    }
-
-    await prisma.wallet.update({
-      where: { userId: sellerId },
-      data: {
-        balance: {
-          increment: amount,
-        },
+  for (const sellerId of sellerIds) {
+    await prisma.shipment.upsert({
+      where: {
+        id:
+          order.shipments?.find((shipment) => shipment.sellerId === sellerId)
+            ?.id || `${order.id}-${sellerId}`,
       },
-    });
-
-    await createLedgerEntry({
-      userId: sellerId,
-      type: "CREDIT",
-      amount,
-      reference: order.id,
-      description: "Pago recibido por venta",
-    });
-
-    await createTransaction({
-      userId: sellerId,
-      amount,
-      type: "DEPOSIT",
-      status: "SUCCESS",
-      reference: order.id,
-      description: "Ingreso por venta completada",
+      create: {
+        id: `${order.id}-${sellerId}`,
+        orderId: order.id,
+        sellerId,
+        customerId: order.customerId,
+        status: "PENDING_PREPARATION",
+      },
+      update: {},
     });
 
     await createNotification(
       sellerId,
-      "Venta completada",
-      `Recibiste RD$${amount} por una venta completada`,
+      "Nueva orden pagada",
+      "CoopHispanica confirmo un pago. Puedes preparar y enviar el producto.",
     );
   }
 
-  return await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      status: "COMPLETED",
-    },
+  for (const item of order.items) {
+    await prisma.product.update({
+      where: { id: item.productId },
+      data: {
+        salesCount: { increment: item.quantity },
+        rankingScore: { increment: item.quantity * 2 },
+      },
+    });
+  }
+
+  await createAuditLog({
+    userId: order.customerId,
+    action: "ORDER_PAYMENT_CONFIRMED",
+    entity: "ORDER",
+    entityId: order.id,
+    description: "Pago de orden confirmado por CoopHispanica",
+    metadata: { externalReference, cooperativeResponse } as any,
   });
+
+  return updatedOrder;
 };
 
 export const updateOrderStatus = async (
   orderId: string,
-  status: "PENDING" | "PAID" | "CANCELLED" | "COMPLETED",
+  status: "PENDING" | "PAID" | "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "COMPLETED",
 ) => {
   const order = await prisma.order.findUnique({
     where: {
@@ -250,7 +327,9 @@ export const getSellerSales = async (sellerId: string) => {
   return await prisma.orderItem.findMany({
     where: {
       order: {
-        status: "COMPLETED",
+        status: {
+          in: ["PAID", "PREPARING", "SHIPPED", "DELIVERED", "COMPLETED"],
+        },
       },
       product: {
         sellerId,

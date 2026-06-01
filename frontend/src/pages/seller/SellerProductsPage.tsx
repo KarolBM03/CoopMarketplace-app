@@ -27,7 +27,6 @@ export default function SellerProductsPage() {
     price: "",
     stock: "",
     imageUrl: "",
-    isFinanced: true,
     category: "Otros",
   });
 
@@ -61,7 +60,6 @@ export default function SellerProductsPage() {
       price: "",
       stock: "",
       imageUrl: "",
-      isFinanced: true,
       category: "Otros",
     });
   };
@@ -89,7 +87,7 @@ export default function SellerProductsPage() {
         price: Number(form.price),
         stock: Number(form.stock),
         imageUrl: finalImageUrl,
-        isFinanced: form.isFinanced,
+        isFinanced: true,
         category: form.category,
       };
 
@@ -130,7 +128,6 @@ export default function SellerProductsPage() {
       price: String(product.price),
       stock: String(product.stock),
       imageUrl: product.imageUrl || "",
-      isFinanced: product.isFinanced,
       category: product.category || "Otros",
     });
 
@@ -246,18 +243,6 @@ export default function SellerProductsPage() {
             className="h-12 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-2 text-sm font-semibold xl:col-span-2"
           />
 
-          <label className="flex h-12 items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-700">
-            Financiamiento
-            <input
-              type="checkbox"
-              checked={form.isFinanced}
-              onChange={(event) =>
-                setForm({ ...form, isFinanced: event.target.checked })
-              }
-              className="h-5 w-5 accent-emerald-600"
-            />
-          </label>
-
           <button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-500">
             <Plus className="h-4 w-4" />
             {editingProduct ? "Guardar" : "Publicar"}
@@ -293,7 +278,7 @@ export default function SellerProductsPage() {
               <tr>
                 <th className="px-5 py-4">Producto</th>
                 <th className="px-5 py-4">Categoria</th>
-                <th className="px-5 py-4">Financiamiento</th>
+                <th className="px-5 py-4">Modalidad</th>
                 <th className="px-5 py-4">Existencia</th>
                 <th className="px-5 py-4">Precio</th>
                 <th className="px-5 py-4 text-right">Acciones</th>
@@ -338,16 +323,8 @@ export default function SellerProductsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex h-7 w-12 items-center rounded-full p-1 transition ${
-                          product.isFinanced ? "bg-emerald-500" : "bg-slate-300"
-                        }`}
-                      >
-                        <span
-                          className={`h-5 w-5 rounded-full bg-white transition ${
-                            product.isFinanced ? "translate-x-5" : ""
-                          }`}
-                        />
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">
+                        CoopHispanica
                       </span>
                     </td>
                     <td className="px-5 py-4">
@@ -359,7 +336,7 @@ export default function SellerProductsPage() {
                       </p>
                     </td>
                     <td className="px-5 py-4 font-black text-emerald-700">
-                      RD${product.price.toLocaleString()}
+                      RD${Number(product.price).toLocaleString()}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">

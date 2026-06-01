@@ -1,23 +1,20 @@
 import api from "../api/axios";
 import type { Financing } from "../types/finance.types";
-import { createIdempotencyKey } from "../utils/finance";
 
 interface FinancingData {
-  customerId: string;
+  customerId?: string;
   cedula?: string;
   income?: number;
   company?: string;
   phone?: string;
   address?: string;
   productId: string;
-  downPayment: number;
   months: number;
+  currency?: string;
 }
 
 interface LoanApplicationData {
-  orderId?: string;
   productId: string;
-  downPayment: number;
   months: number;
   cedula: string;
   income: number;
@@ -26,37 +23,27 @@ interface LoanApplicationData {
   address: string;
 }
 
+interface CounterOfferData {
+  approvedAmount?: number;
+  approvedMonths?: number;
+  approvedMonthlyPayment?: number;
+  message?: string;
+}
+
 export const applyFinancing = async (data: FinancingData) => {
   const response = await api.post("/financing", data);
-  return response.data;
+  return response.data as Financing;
 };
 
 export const applyForLoan = async (data: LoanApplicationData) => {
   const response = await api.post("/financing", data);
-  return response.data as Promise<Financing>;
+  return response.data as Financing;
 };
 
 export const getCustomerFinancings = async (customerId: string) => {
   const response = await api.get(`/financing/customer/${customerId}`);
 
   return response.data as Financing[];
-};
-
-export const getSellerPendingFinancings = async (sellerId: string) => {
-  const response = await api.get(`/financing/seller/${sellerId}/pending`);
-
-  return response.data;
-};
-
-export const approveFinancing = async (
-  financingId: string,
-  sellerId: string,
-) => {
-  const response = await api.patch(`/financing/${financingId}/seller-approve`, {
-    sellerId,
-  });
-
-  return response.data;
 };
 
 export const getAdminFinancings = async (page = 1, limit = 10) => {
@@ -69,37 +56,46 @@ export const getAdminFinancings = async (page = 1, limit = 10) => {
   return response.data;
 };
 
-export const rejectFinancing = async (financingId: string) => {
-  const response = await api.patch(`/financing/${financingId}/reject`);
-  return response.data;
-};
-
-export const adminApproveFinancing = async (financingId: string) => {
-  const response = await api.patch(`/financing/${financingId}/admin-approve`);
-
-  return response.data;
-};
-
-export const adminRejectFinancing = async (
-  financingId: string,
-  reason = "Solicitud rechazada por cooperativa",
-) => {
-  const response = await api.patch(`/financing/${financingId}/admin-reject`, {
-    reason,
-  });
-
-  return response.data;
-};
-
-export const payDownPayment = async (financingId: string) => {
+export const cooperativeApproveFinancing = async (financingId: string) => {
   const response = await api.patch(
-    `/financing/${financingId}/pay-down-payment`,
-    {},
+    `/financing/${financingId}/cooperative-approve`,
+  );
+
+  return response.data as Financing;
+};
+
+export const cooperativeRejectFinancing = async (
+  financingId: string,
+  reason = "Solicitud rechazada por CoopHispanica",
+) => {
+  const response = await api.patch(
+    `/financing/${financingId}/cooperative-reject`,
     {
-      headers: {
-        "Idempotency-Key": createIdempotencyKey("down-payment"),
-      },
+      reason,
     },
   );
-  return response.data;
+
+  return response.data as Financing;
+};
+
+export const createCounterOffer = async (
+  financingId: string,
+  data: CounterOfferData,
+) => {
+  const response = await api.patch(
+    `/financing/${financingId}/counter-offer`,
+    data,
+  );
+
+  return response.data as Financing;
+};
+
+export const acceptCounterOffer = async (financingId: string) => {
+  const response = await api.patch(`/financing/${financingId}/accept-offer`);
+  return response.data as Financing;
+};
+
+export const getCooperativePaymentLink = async (financingId: string) => {
+  const response = await api.get(`/financing/${financingId}/payment-link`);
+  return response.data as { paymentUrl: string };
 };

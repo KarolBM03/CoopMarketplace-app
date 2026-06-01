@@ -1,8 +1,5 @@
 import prisma from "../../config/prisma";
-import {
-  getTransactionStatus,
-  sendLoanApplication,
-} from "../cooperative/cooperative.service";
+import { getTransactionStatus } from "../cooperative/cooperative.service";
 
 const queueDriver = process.env.QUEUE_DRIVER || "inline";
 
@@ -23,7 +20,10 @@ export const processLoanQueue = async () => {
 
   for (const loan of pendingLoans) {
     try {
-      const result = await sendLoanApplication({ loanId: loan.id });
+      const result = {
+        status: "SKIPPED",
+        message: "Las solicitudes reales se envian desde el modulo financing.",
+      };
 
       results.push({
         loanId: loan.id,

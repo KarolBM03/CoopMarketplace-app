@@ -11,11 +11,19 @@ const labels: Record<string, string> = {
   OVERDUE: "En mora",
   PAID: "Pagado",
   PENDING: "Pendiente",
+  SENT_TO_COOPERATIVE: "Enviada a CoopHispanica",
+  UNDER_REVIEW: "En evaluacion",
+  COUNTER_OFFER: "Contraoferta",
+  CUSTOMER_ACCEPTED: "Oferta aceptada",
+  WAITING_COOPERATIVE_PAYMENT: "Pendiente de pago en CoopHispanica",
   REJECTED: "Rechazado",
   RETURNED: "Devuelto",
+  SHIPPED: "Enviada",
   SUCCESS: "Exitoso",
-  WAITING_DOWN_PAYMENT: "Pendiente de inicial",
-  WAITING_SELLER_APPROVAL: "Pendiente del vendedor",
+  PENDING_PREPARATION: "Pendiente de preparacion",
+  PREPARING: "Preparando",
+  IN_TRANSIT: "En camino",
+  DELIVERED: "Entregada",
 };
 
 export const statusLabel = (status?: string | null) => {

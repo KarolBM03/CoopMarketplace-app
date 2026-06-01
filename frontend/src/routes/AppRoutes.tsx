@@ -25,7 +25,7 @@ import SellerProductsPage from "../pages/seller/SellerProductsPage";
 import SellerSalesPage from "../pages/seller/SellerSalesPage";
 import SellerWalletPage from "../pages/seller/SellerWalletPage";
 import SellerNotificationsPage from "../pages/seller/SellerNotification";
-import SellerFinancingRequestsPage from "../pages/seller/SellerFinancingRequestsPage";
+import SellerShipmentsPage from "../pages/seller/SellerShipmentsPage";
 import AdminFinancingsPage from "../pages/admin/AdminFinancingsPage";
 import AdminReportsPage from "../pages/admin/AdminReportsPage";
 import VerifyOTPPage from "../pages/auth/VerifyOTPPage";
@@ -63,10 +63,7 @@ export default function AppRoutes() {
           <Route path="products" element={<SellerProductsPage />} />
           <Route path="sales" element={<SellerSalesPage />} />
           <Route path="wallet" element={<SellerWalletPage />} />
-          <Route
-            path="financing-requests"
-            element={<SellerFinancingRequestsPage />}
-          />
+          <Route path="shipments" element={<SellerShipmentsPage />} />
           <Route path="notifications" element={<SellerNotificationsPage />} />
         </Route>
 

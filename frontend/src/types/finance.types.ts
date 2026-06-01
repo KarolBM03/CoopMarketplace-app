@@ -3,14 +3,16 @@ import type { User } from "./auth.types";
 
 export type FinancingStatus =
   | "PENDING"
+  | "SENT_TO_COOPERATIVE"
+  | "UNDER_REVIEW"
   | "APPROVED_BY_COOPERATIVE"
-  | "WAITING_SELLER_APPROVAL"
-  | "WAITING_DOWN_PAYMENT"
+  | "COUNTER_OFFER"
+  | "CUSTOMER_ACCEPTED"
+  | "WAITING_COOPERATIVE_PAYMENT"
   | "ACTIVE"
+  | "REJECTED"
   | "COMPLETED"
-  | "LATE"
-  | "APPROVED"
-  | "REJECTED";
+  | "LATE";
 
 export interface Installment {
   id: string;
@@ -48,6 +50,7 @@ export interface Financing {
   product: Product;
   customer?: Pick<User, "id" | "fullName" | "email">;
   installments: Installment[];
+  counterOffer?: any;
 }
 
 export interface OrderItem {
@@ -63,7 +66,14 @@ export interface Order {
   id: string;
   customerId: string;
   totalAmount: number;
-  status: "PENDING" | "PAID" | "CANCELLED" | "COMPLETED";
+  status:
+    | "PENDING"
+    | "PAID"
+    | "PREPARING"
+    | "SHIPPED"
+    | "DELIVERED"
+    | "CANCELLED"
+    | "COMPLETED";
   createdAt: string;
   items: OrderItem[];
 }

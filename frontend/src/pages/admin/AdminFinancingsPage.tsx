@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   getAdminFinancings,
-  adminApproveFinancing,
-  adminRejectFinancing,
+  cooperativeApproveFinancing,
+  cooperativeRejectFinancing,
 } from "../../services/financing.service";
 import toast from "react-hot-toast";
 import { statusLabel } from "../../utils/statusLabels";
@@ -16,8 +16,10 @@ export default function AdminFinancingsPage() {
 
   const loadFinancings = async () => {
     setLoading(true);
+
     try {
       const data = await getAdminFinancings(page, 6);
+
       setFinancings(data.financings || []);
       setTotalPages(data.pagination?.totalPages || 1);
       setTotal(data.pagination?.total || 0);
@@ -30,7 +32,8 @@ export default function AdminFinancingsPage() {
     loadFinancings();
   }, [page]);
 
-  const canAdminReview = (status: string) => status === "PENDING";
+  const canAdminReview = (status: string) =>
+    status === "SENT_TO_COOPERATIVE" || status === "UNDER_REVIEW";
 
   return (
     <div className="p-8">
@@ -50,7 +53,7 @@ export default function AdminFinancingsPage() {
         </p>
 
         <p className="text-sm font-black text-slate-700">
-          Pagina {page} de {totalPages}
+          Página {page} de {totalPages}
         </p>
       </div>
 
@@ -67,8 +70,9 @@ export default function AdminFinancingsPage() {
             <h2 className="text-xl font-black text-slate-800">
               No hay solicitudes de financiamiento
             </h2>
+
             <p className="mt-2 text-sm font-semibold text-slate-500">
-              Cuando un cliente solicite financiamiento, aparecera aqui.
+              Cuando un cliente solicite financiamiento, aparecerá aquí.
             </p>
           </div>
         ) : (
@@ -91,32 +95,47 @@ export default function AdminFinancingsPage() {
                     <p>
                       <b>Producto:</b> {financing.product?.title}
                     </p>
+
                     <p>
-                      <b>Cédula:</b> {financing.cedula}
+                      <b>Cédula:</b> {financing.cedula || "No registrada"}
                     </p>
+
                     <p>
-                      <b>Ingresos:</b> RD${financing.income?.toLocaleString()}
+                      <b>Ingresos:</b> RD$
+                      {(Number(financing.income) || 0).toLocaleString()}
                     </p>
+
                     <p>
-                      <b>Empresa:</b> {financing.company}
+                      <b>Empresa:</b> {financing.company || "No registrada"}
                     </p>
+
                     <p>
-                      <b>Teléfono:</b> {financing.phone}
+                      <b>Teléfono:</b> {financing.phone || "No registrado"}
                     </p>
+
                     <p>
-                      <b>Dirección:</b> {financing.address}
+                      <b>Dirección:</b> {financing.address || "No registrada"}
                     </p>
+
                     <p>
                       <b>Inicial:</b> RD$
-                      {financing.downPayment?.toLocaleString()}
+                      {(Number(financing.downPayment) || 0).toLocaleString()}
                     </p>
+
                     <p>
-                      <b>Cuotas:</b> {financing.months}
+                      <b>Meses:</b> {financing.months}
                     </p>
+
                     <p>
-                      <b>Pago mensual:</b> RD$
-                      {financing.monthlyPayment?.toLocaleString()}
+                      <b>Cuota estimada:</b> RD$
+                      {(Number(financing.monthlyPayment) || 0).toLocaleString()}
                     </p>
+
+                    {financing.externalStatus && (
+                      <p>
+                        <b>Estado externo:</b> {financing.externalStatus}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -125,16 +144,18 @@ export default function AdminFinancingsPage() {
                 </span>
               </div>
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 {canAdminReview(financing.status) ? (
                   <>
                     <button
                       onClick={async () => {
                         try {
-                          await adminApproveFinancing(financing.id);
+                          await cooperativeApproveFinancing(financing.id);
+
                           toast.success(
-                            "Financiamiento aprobado por cooperativa",
+                            "Financiamiento aprobado por CoopHispánica",
                           );
+
                           await loadFinancings();
                         } catch (error: any) {
                           toast.error(
@@ -151,8 +172,13 @@ export default function AdminFinancingsPage() {
                     <button
                       onClick={async () => {
                         try {
-                          await adminRejectFinancing(financing.id);
+                          await cooperativeRejectFinancing(
+                            financing.id,
+                            "Solicitud rechazada por CoopHispánica",
+                          );
+
                           toast.success("Financiamiento rechazado");
+
                           await loadFinancings();
                         } catch (error: any) {
                           toast.error(

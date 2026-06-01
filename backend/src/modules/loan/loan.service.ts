@@ -1,5 +1,4 @@
 import prisma from "../../config/prisma";
-import { sendLoanApplication } from "../cooperative/cooperative.service";
 
 interface CalculateLoanData {
   amount: number;
@@ -89,7 +88,10 @@ export const applyLoan = async ({
     },
   });
 
-  const cooperativeResponse = await sendLoanApplication({ loanId: loan.id });
+  const cooperativeResponse = {
+    status: "PENDING",
+    message: "Prestamo local creado; CoopHispanica maneja el flujo real.",
+  };
 
   return {
     ...loan,

@@ -1,0 +1,589 @@
+CAMBIOS REALIZADOS EN COOPMARKET PARA ALINEARLO CON COOPHISPANICA
+
+Fecha: 2026-06-01
+
+Objetivo general:
+Cambie el flujo para que CoopMarket funcione como marketplace y CoopHispanica sea quien maneje pagos, financiamientos, cuotas y confirmaciones externas.
+
+Antes, CoopMarket tenia partes donde cobraba localmente usando billetera, pagaba iniciales, procesaba cuotas y acreditaba dinero al vendedor. Eso no encajaba con el modelo nuevo, porque ahora la cooperativa es quien debe manejar el dinero real.
+
+
+1. FLUJO GENERAL NUEVO
+
+Ahora el flujo queda asi:
+
+Cliente compra o solicita financiamiento
+↓
+CoopMarket crea la orden o solicitud
+↓
+CoopMarket envia/abre el flujo hacia CoopHispanica
+↓
+CoopHispanica cobra, aprueba, rechaza o confirma
+↓
+CoopMarket guarda el estado externo
+↓
+Cliente, seller y admin ven el resultado en sus paneles
+
+CoopMarket ya no debe cobrar dinero directamente.
+
+
+2. CAMBIOS EN PRISMA
+
+Archivo:
+backend/prisma/schema.prisma
+
+Agregue campos para conectar con CoopHispanica:
+
+En User:
+- cooperativeMemberId
+- memberNumber
+- isCooperativeMember
+- cooperativeStatus
+
+Esto sirve para identificar usuarios que vienen o pertenecen a la cooperativa.
+
+En Product:
+- currency
+- views
+- salesCount
+- rankingScore
+- isFinanced queda por defecto en true
+
+Esto prepara el marketplace para productos financiables por CoopHispanica y para ranking de productos.
+
+En Order:
+- currency
+- externalPaymentId
+- externalReference
+- externalStatus
+- cooperativeResponse
+- shipments
+
+Esto permite guardar datos del pago externo de CoopHispanica.
+
+En Financing:
+- externalLoanId
+- externalStatus
+- externalReference
+- cooperativeResponse
+- approvedAt
+- rejectedAt
+- rejectionReason
+- approvedAmount
+- approvedMonths
+- approvedMonthlyPayment
+- counterOffer
+- customerAcceptedAt
+- sentToCooperativeAt
+- activatedAt
+
+Esto deja trazabilidad del financiamiento externo.
+
+Cambie los estados de Financing para el nuevo flujo:
+- PENDING
+- SENT_TO_COOPERATIVE
+- UNDER_REVIEW
+- APPROVED_BY_COOPERATIVE
+- COUNTER_OFFER
+- CUSTOMER_ACCEPTED
+- WAITING_COOPERATIVE_PAYMENT
+- ACTIVE
+- REJECTED
+- COMPLETED
+- LATE
+
+Agregue Shipment:
+- orderId
+- sellerId
+- customerId
+- financingId
+- status
+- trackingNumber
+- shippingAddress
+- province
+- city
+- sector
+- reference
+- phone
+- notes
+- preparedAt
+- shippedAt
+- deliveredAt
+
+Estados de Shipment:
+- PENDING_PREPARATION
+- PREPARING
+- SHIPPED
+- IN_TRANSIT
+- DELIVERED
+- CANCELLED
+- FAILED
+
+
+3. CAMBIOS EN BACKEND
+
+Archivo:
+backend/src/app.ts
+
+Quite rutas locales que ya no deben manejar dinero:
+- /api/payments
+- /api/installments
+
+Tambien quite el cron local de cuotas vencidas, porque las cuotas reales deben venir desde CoopHispanica.
+
+Agregue:
+- /api/shipments
+
+
+4. COOPERATIVE SERVICE
+
+Archivo:
+backend/src/modules/cooperative/cooperative.service.ts
+
+Rehice el servicio para prepararlo para API real de CoopHispanica.
+
+Funciones preparadas:
+- validateMemberCredentials()
+- sendLoanApplication()
+- getLoanStatus()
+- createPaymentLink()
+- confirmPayment()
+- syncInstallments()
+- getInstallments()
+- getLoanCounterOffer()
+- verifyBankAccount()
+- getTransactionStatus()
+
+Variables de entorno esperadas:
+- COOP_API_URL
+- COOP_API_KEY
+- COOP_PAYMENT_URL
+- COOP_CALLBACK_SECRET
+
+Si no hay API configurada, el servicio responde de forma simulada para que la app siga funcionando.
+
+
+5. FINANCING BACKEND
+
+Archivos:
+backend/src/modules/financing/financing.service.ts
+backend/src/modules/financing/financing.controller.ts
+backend/src/modules/financing/financing.routes.ts
+
+Quite el flujo viejo:
+- seller approve financing
+- payDownPayment
+- WAITING_SELLER_APPROVAL
+- WAITING_DOWN_PAYMENT
+- pago de inicial local
+- acreditacion de inicial al seller desde CoopMarket
+
+Nuevo flujo:
+
+Cliente solicita financiamiento
+↓
+Financing pasa a SENT_TO_COOPERATIVE
+↓
+Se llama sendLoanApplication()
+↓
+Admin/CoopHispanica puede aprobar, rechazar o enviar contraoferta
+↓
+Cliente acepta contraoferta si aplica
+↓
+Cliente abre link de pago en CoopHispanica
+↓
+CoopHispanica confirma pago por callback
+↓
+Financing pasa a ACTIVE
+
+Nuevas rutas:
+- POST /api/financing
+- GET /api/financing/customer/:customerId
+- GET /api/financing/admin
+- PATCH /api/financing/:financingId/cooperative-approve
+- PATCH /api/financing/:financingId/cooperative-reject
+- PATCH /api/financing/:financingId/counter-offer
+- PATCH /api/financing/:financingId/accept-offer
+- GET /api/financing/:financingId/payment-link
+- POST /api/financing/cooperative/:financingId/confirm-payment
+
+La ruta de callback valida COOP_CALLBACK_SECRET si esta configurado.
+
+
+6. ORDER BACKEND
+
+Archivos:
+backend/src/modules/order/order.service.ts
+backend/src/modules/order/order.controller.ts
+backend/src/modules/order/order.routes.ts
+
+Cambie el checkout directo:
+
+Antes:
+Cliente pagaba con wallet desde CoopMarket.
+
+Ahora:
+Cliente crea orden
+↓
+CoopMarket pide link de pago a CoopHispanica
+↓
+Cliente paga en CoopHispanica
+↓
+CoopHispanica confirma por callback
+↓
+Orden pasa a PAID
+↓
+Se crean envios para los sellers
+
+Agregue:
+- POST /api/orders/:orderId/cooperative-payment-link
+- POST /api/orders/cooperative/:orderId/confirm-payment
+
+Quite la ruta:
+- PATCH /api/orders/:id/complete
+
+Tambien quite la logica que acreditaba dinero al seller desde CoopMarket cuando se completaba una orden.
+
+Ahora CoopMarket no mueve dinero del pago directo.
+
+
+7. SHIPMENT BACKEND
+
+Archivos nuevos:
+backend/src/modules/shipment/shipment.service.ts
+backend/src/modules/shipment/shipment.controller.ts
+backend/src/modules/shipment/shipment.routes.ts
+
+Agregue modulo de envios.
+
+Funciones:
+- createShipmentForOrder()
+- updateShipmentStatus()
+- getCustomerShipments()
+- getSellerShipments()
+- getAdminShipments()
+
+Endpoints:
+- GET /api/shipments/admin
+- GET /api/shipments/customer/:customerId
+- GET /api/shipments/seller/:sellerId
+- POST /api/shipments/order/:orderId
+- PATCH /api/shipments/:shipmentId/status
+
+El seller puede actualizar el estado de sus envios.
+El admin puede ver todos.
+El cliente puede ver sus envios.
+
+
+8. PRODUCT BACKEND
+
+Archivo:
+backend/src/modules/product/product.service.ts
+
+Cambios:
+- Todo producto se crea con isFinanced true.
+- Se agrega currency DOP.
+- Se agregan views y rankingScore cuando se abre el detalle.
+- Se agregan salesCount y rankingScore cuando CoopHispanica confirma una orden.
+- Corregi un bug donde se sumaban views al editar producto en vez de al verlo.
+
+
+9. INSTALLMENT BACKEND
+
+Archivo:
+backend/src/modules/installment/installment.service.ts
+
+Deje payInstallment como stub seguro.
+
+Ahora si alguien intenta pagar una cuota localmente, responde:
+"Las cuotas se pagan y confirman desde CoopHispanica"
+
+Esto evita que CoopMarket descuente wallet o mueva dinero por cuotas.
+
+
+10. PAYMENT BACKEND
+
+Archivo:
+backend/src/modules/payment/payment.service.ts
+
+La ruta /api/payments ya no esta montada en app.ts.
+
+El archivo queda como codigo viejo/simulado, pero no se usa desde el flujo actual.
+
+Tambien ajuste comparaciones con Decimal para que compile.
+
+
+11. WALLET BACKEND
+
+Archivo:
+backend/src/services/wallet.service.ts
+
+Arregle comparaciones de Decimal:
+- Number(wallet.balance)
+- Number(wallet.frozenBalance)
+
+Esto evita errores de TypeScript y Prisma.
+
+Importante:
+La billetera puede seguir existiendo para historial o funciones internas, pero ya no se usa para cobrar checkout ni cuotas en el flujo nuevo.
+
+
+12. LOAN Y QUEUE
+
+Archivos:
+backend/src/modules/loan/loan.service.ts
+backend/src/modules/queue/queue.service.ts
+
+Evite que esos modulos intenten llamar sendLoanApplication() con parametros viejos.
+
+Ahora quedan como soporte/simulacion, porque el flujo real de financiamiento se maneja desde financing.service.ts.
+
+
+13. REPORTES
+
+Archivo:
+backend/src/modules/report/report.service.ts
+
+Arregle calculos con Decimal usando Number().
+
+
+14. FRONTEND CHECKOUT
+
+Archivo:
+frontend/src/pages/checkout/CheckoutPage.tsx
+
+Cambios:
+- Ya no llama processPayment().
+- Crea orden con createCheckoutSession().
+- Luego llama getOrderCooperativePaymentLink().
+- Abre el link de pago de CoopHispanica.
+- Muestra toast indicando que debe continuar en CoopHispanica.
+
+Boton:
+"Pagar en CoopHispanica"
+
+
+15. FRONTEND FINANCING
+
+Archivos:
+frontend/src/services/financing.service.tsx
+frontend/src/pages/customer/CustomerFinancingPage.tsx
+frontend/src/pages/admin/AdminFinancingsPage.tsx
+
+Cambios:
+- Quite pago de inicial local.
+- Quite aprobacion del seller.
+- Cliente ahora ve estados de CoopHispanica.
+- Cliente puede aceptar contraoferta.
+- Cliente puede abrir link de pago de CoopHispanica.
+- Admin puede aprobar/rechazar como CoopHispanica.
+
+Estados visibles:
+- Pendiente
+- Enviada a CoopHispanica
+- En evaluacion
+- Aprobada
+- Contraoferta
+- Oferta aceptada
+- Pendiente de pago en CoopHispanica
+- Activo
+- En mora
+- Completado
+- Rechazado
+
+
+16. FRONTEND SELLER
+
+Archivos:
+frontend/src/components/layout/SellerLayout.tsx
+frontend/src/routes/AppRoutes.tsx
+frontend/src/pages/seller/SellerShipmentsPage.tsx
+
+Quite:
+- SellerFinancingRequestsPage.tsx
+- Ruta /seller/financing-requests
+- Menu "Solicitudes" del seller
+
+Agregue:
+- Ruta /seller/shipments
+- Menu "Envios"
+- Pagina SellerShipmentsPage
+
+Ahora el seller no aprueba financiamientos.
+El seller solo gestiona preparacion/envio cuando ya hay pago confirmado.
+
+
+17. FRONTEND PRODUCTOS SELLER
+
+Archivo:
+frontend/src/pages/seller/SellerProductsPage.tsx
+
+Cambios:
+- Quite checkbox de financiamiento.
+- El producto siempre se manda como financiable.
+- En tabla ahora se muestra modalidad "CoopHispanica".
+- Arregle formato de precio con Number(product.price).
+
+
+18. SERVICIOS FRONTEND
+
+Archivos:
+frontend/src/services/order.service.ts
+frontend/src/services/checkout.service.ts
+frontend/src/services/shipment.service.ts
+
+order.service.ts:
+- Agregue getOrderCooperativePaymentLink().
+- Quite completeOrder().
+
+checkout.service.ts:
+- Ya no importa processPayment().
+- confirmCheckout queda bloqueado porque el pago lo confirma CoopHispanica por callback.
+
+shipment.service.ts:
+- Agregue llamadas para envios:
+  - getSellerShipments()
+  - getCustomerShipments()
+  - getAdminShipments()
+  - createShipmentForOrder()
+  - updateShipmentStatus()
+
+
+19. LABELS Y TIPOS
+
+Archivos:
+frontend/src/utils/statusLabels.ts
+frontend/src/types/finance.types.ts
+
+Agregue etiquetas en espanol para los estados nuevos:
+- SENT_TO_COOPERATIVE
+- UNDER_REVIEW
+- COUNTER_OFFER
+- CUSTOMER_ACCEPTED
+- WAITING_COOPERATIVE_PAYMENT
+- PENDING_PREPARATION
+- PREPARING
+- SHIPPED
+- IN_TRANSIT
+- DELIVERED
+
+Actualice tipos de orden para incluir:
+- PREPARING
+- SHIPPED
+- DELIVERED
+
+
+20. ARCHIVO NUEVO DE MONEDA
+
+Archivo:
+backend/src/services/currency.service.ts
+
+Agregue servicio base para:
+- getExchangeRate()
+- convertCurrency()
+- formatMoney()
+
+Esta listo para manejar DOP/USD/EUR si luego quieres multicurrency.
+
+
+21. VERIFICACION REALIZADA
+
+Comandos ejecutados:
+
+npx prisma format
+npx prisma db push --accept-data-loss
+npx prisma generate
+npm run build en backend
+npm run build en frontend
+
+Resultado:
+- Backend compila correctamente.
+- Frontend compila correctamente.
+- Prisma quedo sincronizado.
+- Backend quedo levantado en http://localhost:5000/
+- Frontend responde en http://localhost:5173/
+
+
+22. COSAS IMPORTANTES A RECORDAR
+
+CoopMarket ya no debe:
+- cobrar pagos directamente,
+- pagar cuotas localmente,
+- descontar wallet para checkout,
+- acreditar dinero al seller por pagos,
+- dejar que seller apruebe financiamientos,
+- manejar inicial local.
+
+CoopHispanica debe:
+- aprobar/rechazar financiamientos,
+- crear links de pago,
+- confirmar pagos por callback,
+- manejar cuotas,
+- confirmar estados externos.
+
+CoopMarket debe:
+- mostrar productos,
+- crear ordenes,
+- crear solicitudes,
+- guardar estados externos,
+- mostrar estado al cliente/seller/admin,
+- permitir al seller preparar/enviar productos cuando el pago ya fue confirmado.
+
+
+23. ARCHIVOS PRINCIPALES CAMBIADOS
+
+Backend:
+- backend/prisma/schema.prisma
+- backend/src/app.ts
+- backend/src/modules/cooperative/cooperative.service.ts
+- backend/src/modules/financing/financing.service.ts
+- backend/src/modules/financing/financing.controller.ts
+- backend/src/modules/financing/financing.routes.ts
+- backend/src/modules/order/order.service.ts
+- backend/src/modules/order/order.controller.ts
+- backend/src/modules/order/order.routes.ts
+- backend/src/modules/product/product.service.ts
+- backend/src/modules/shipment/shipment.service.ts
+- backend/src/modules/shipment/shipment.controller.ts
+- backend/src/modules/shipment/shipment.routes.ts
+- backend/src/modules/installment/installment.service.ts
+- backend/src/modules/loan/loan.service.ts
+- backend/src/modules/queue/queue.service.ts
+- backend/src/modules/report/report.service.ts
+- backend/src/services/wallet.service.ts
+- backend/src/services/currency.service.ts
+
+Frontend:
+- frontend/src/pages/checkout/CheckoutPage.tsx
+- frontend/src/pages/customer/CustomerFinancingPage.tsx
+- frontend/src/pages/admin/AdminFinancingsPage.tsx
+- frontend/src/pages/seller/SellerProductsPage.tsx
+- frontend/src/pages/seller/SellerShipmentsPage.tsx
+- frontend/src/components/layout/SellerLayout.tsx
+- frontend/src/routes/AppRoutes.tsx
+- frontend/src/services/financing.service.tsx
+- frontend/src/services/order.service.ts
+- frontend/src/services/checkout.service.ts
+- frontend/src/services/shipment.service.ts
+- frontend/src/types/finance.types.ts
+- frontend/src/utils/statusLabels.ts
+
+
+24. QUE QUEDA PENDIENTE PARA CONECTARLO REAL
+
+Para que CoopHispanica funcione real, falta colocar:
+
+- COOP_API_URL
+- COOP_API_KEY
+- COOP_PAYMENT_URL
+- COOP_CALLBACK_SECRET
+
+Tambien falta que CoopHispanica envie callbacks reales a:
+
+Ordenes:
+POST /api/orders/cooperative/:orderId/confirm-payment
+
+Financiamientos:
+POST /api/financing/cooperative/:financingId/confirm-payment
+
+Cuando eso este conectado, CoopMarket solo reflejara lo que CoopHispanica confirme.

@@ -141,7 +141,7 @@ export const debitWallet = async (
     throw new Error("Billetera no encontrada");
   }
 
-  if (wallet.balance < amount) {
+  if (Number(wallet.balance) < amount) {
     throw new Error("Fondos insuficientes");
   }
 
@@ -187,7 +187,7 @@ export const freezeFunds = async (
     throw new Error("Billetera no encontrada");
   }
 
-  if (wallet.balance < amount) {
+  if (Number(wallet.balance) < amount) {
     throw new Error("Fondos insuficientes");
   }
 
@@ -236,7 +236,7 @@ export const releaseFunds = async (
     throw new Error("Billetera no encontrada");
   }
 
-  if (wallet.frozenBalance < amount) {
+  if (Number(wallet.frozenBalance) < amount) {
     throw new Error("Fondos congelados insuficientes");
   }
 

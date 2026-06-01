@@ -6,19 +6,16 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./modules/auth/auth.routes";
 import productRoutes from "./modules/product/product.routes";
 import financingRoutes from "./modules/financing/financing.routes";
-import installmentRoutes from "./modules/installment/installment.routes";
 import orderRoutes from "./modules/order/order.routes";
-import paymentRoutes from "./modules/payment/payment.routes";
 import walletRoutes from "./modules/wallet/wallet.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import transactionRoutes from "./modules/transaction/transaction.routes";
 import notificationRoutes from "./modules/notification/notification.routes";
 import uploadRoutes from "./modules/upload/upload.routes";
-import cron from "node-cron";
-import { checkOverdueInstallments } from "./modules/installment/installment.cron";
 import loanRoutes from "./modules/loan/loan.routes";
 import reportRoutes from "./modules/report/report.routes";
 import queueRoutes from "./modules/queue/queue.routes";
+import shipmentRoutes from "./modules/shipment/shipment.routes";
 
 const app = express();
 
@@ -31,9 +28,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/financing", financingRoutes);
-app.use("/api/installments", installmentRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/payments", paymentRoutes);
 app.use("/api/wallets", walletRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/transactions", transactionRoutes);
@@ -42,9 +37,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/loans", loanRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/queues", queueRoutes);
-cron.schedule("*/1 * * * *", async () => {
-  await checkOverdueInstallments();
-});
+app.use("/api/shipments", shipmentRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Marketplace API Corriendo");

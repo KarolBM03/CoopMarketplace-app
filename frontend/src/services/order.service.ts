@@ -24,7 +24,7 @@ export const getSellerSales = async (sellerId: string) => {
   return response.data;
 };
 
-export const completeOrder = async (orderId: string) => {
-  const response = await api.patch(`/orders/${orderId}/complete`);
-  return response.data;
+export const getOrderCooperativePaymentLink = async (orderId: string) => {
+  const response = await api.post(`/orders/${orderId}/cooperative-payment-link`);
+  return response.data as { paymentUrl: string };
 };

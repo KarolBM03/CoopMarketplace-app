@@ -72,7 +72,7 @@ export const processPayment = async ({
       throw new Error("La orden no puede ser pagada");
     }
 
-    if (Math.abs(paymentAmount - order.totalAmount) > 0.01) {
+    if (Math.abs(paymentAmount - Number(order.totalAmount)) > 0.01) {
       throw new Error("Monto incorrecto");
     }
 
@@ -86,7 +86,7 @@ export const processPayment = async ({
       },
     });
 
-    if (customerWallet.balance < paymentAmount) {
+    if (Number(customerWallet.balance) < paymentAmount) {
       throw new Error("Fondos insuficientes");
     }
 

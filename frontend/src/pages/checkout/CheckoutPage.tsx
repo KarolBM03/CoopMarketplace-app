@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { createCheckoutSession, confirmCheckout } from "../../services/checkout.service";
+import { createCheckoutSession } from "../../services/checkout.service";
+import { getOrderCooperativePaymentLink } from "../../services/order.service";
 import { applyForLoan } from "../../services/financing.service";
 import { useAuthStore } from "../../store/auth.store";
 import { useCartStore } from "../../store/cart.store";
@@ -31,14 +32,19 @@ export default function CheckoutPage() {
   });
 
   const total = useMemo(
-    () => items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+    () =>
+      items.reduce(
+        (sum, item) => sum + Number(item.product.price || 0) * item.quantity,
+        0,
+      ),
     [items],
   );
 
   const canFinance = items.length === 1 && Boolean(items[0]?.product?.isFinanced);
   const product = items[0]?.product;
-  const downPayment = canFinance ? product.price * 0.2 : 0;
-  const loanAmount = canFinance ? product.price - downPayment : 0;
+  const productPrice = Number(product?.price || 0);
+  const downPayment = canFinance ? productPrice * 0.2 : 0;
+  const loanAmount = canFinance ? productPrice - downPayment : 0;
   const calculation = calculateInstallments({
     amount: loanAmount,
     months: 12,
@@ -83,16 +89,16 @@ export default function CheckoutPage() {
         })),
       });
 
-      await confirmCheckout({
-        orderId: order.id,
-        amount: total,
-      });
+      const result = await getOrderCooperativePaymentLink(order.id);
 
       clearCart();
-      toast.success("Pago realizado correctamente");
+      toast.success("Orden creada. Continua el pago en CoopHispanica");
+      if (result.paymentUrl) {
+        window.open(result.paymentUrl, "_blank", "noopener,noreferrer");
+      }
       navigate(panelPath);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error procesando pago");
+      toast.error(error.response?.data?.message || "Error creando pago en CoopHispanica");
     } finally {
       setSubmitting(false);
     }
@@ -110,7 +116,6 @@ export default function CheckoutPage() {
       setSubmitting(true);
       await applyForLoan({
         productId: product.id,
-        downPayment,
         months: 12,
         cedula: data.cedula,
         income: data.income,
@@ -120,7 +125,7 @@ export default function CheckoutPage() {
       });
 
       clearCart();
-      toast.success("Solicitud enviada a la cooperativa");
+      toast.success("Solicitud enviada a CoopHispanica");
       navigate("/customer/financing");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error solicitando financiamiento");
@@ -191,7 +196,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <p className="font-black text-emerald-600">
-                      RD${(item.product.price * item.quantity).toLocaleString()}
+                      RD${(Number(item.product.price || 0) * item.quantity).toLocaleString()}
                     </p>
                   </div>
                 ))
@@ -211,7 +216,7 @@ export default function CheckoutPage() {
                 disabled={items.length === 0 || submitting}
                 className="mt-6 w-full rounded-xl bg-emerald-600 py-4 font-black text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {submitting ? "Procesando..." : "Pagar ahora"}
+                {submitting ? "Creando enlace..." : "Pagar en CoopHispanica"}
               </button>
             </section>
 

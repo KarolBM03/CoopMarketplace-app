@@ -4,11 +4,11 @@ import {
   adminFinancings,
   confirmPayment,
   cooperativeApprove,
+  cooperativeReject,
   counterOffer,
   create,
   getByCustomer,
   paymentLink,
-  reject,
 } from "./financing.controller";
 import { financingLimiter } from "../../middlewares/rateLimit.middleware";
 import { protect } from "../../middlewares/auth.middleware";
@@ -17,18 +17,15 @@ import { allowSelfOrAdmin } from "../../middlewares/ownership.middleware";
 
 const router = Router();
 
-router.post("/cooperative/:financingId/confirm-payment", confirmPayment);
+router.post(
+  "/cooperative/:financingId/confirm-payment",
+  confirmPayment,
+);
 
 router.use(protect);
 
 router.post("/", financingLimiter, authorize("CUSTOMER", "ADMIN"), create);
-
-router.get(
-  "/customer/:customerId",
-  allowSelfOrAdmin("customerId"),
-  getByCustomer,
-);
-
+router.get("/customer/:customerId", allowSelfOrAdmin("customerId"), getByCustomer);
 router.get("/admin", authorize("ADMIN"), adminFinancings);
 
 router.patch(
@@ -36,13 +33,13 @@ router.patch(
   authorize("ADMIN"),
   cooperativeApprove,
 );
-
-router.patch("/:financingId/cooperative-reject", authorize("ADMIN"), reject);
-
+router.patch(
+  "/:financingId/cooperative-reject",
+  authorize("ADMIN"),
+  cooperativeReject,
+);
 router.patch("/:financingId/counter-offer", authorize("ADMIN"), counterOffer);
-
-router.patch("/:financingId/accept-offer", authorize("CUSTOMER"), acceptOffer);
-
+router.patch("/:financingId/accept-offer", authorize("CUSTOMER", "ADMIN"), acceptOffer);
 router.get(
   "/:financingId/payment-link",
   authorize("CUSTOMER", "ADMIN"),

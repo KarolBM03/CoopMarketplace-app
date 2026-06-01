@@ -3,74 +3,83 @@ import {
   CheckCircle2,
   Clock,
   CreditCard,
+  ExternalLink,
   Landmark,
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
+  acceptCounterOffer,
+  getCooperativePaymentLink,
   getCustomerFinancings,
-  payDownPayment,
 } from "../../services/financing.service";
-import { payInstallment } from "../../services/installment.service";
 import { useAuthStore } from "../../store/auth.store";
-import type {
-  Financing,
-  FinancingStatus,
-  Installment,
-} from "../../types/finance.types";
+import type { Financing, Installment } from "../../types/finance.types";
 
 const statusMap: Record<
-  FinancingStatus,
+  string,
   { label: string; description: string; className: string; step: number }
 > = {
   PENDING: {
-    label: "Pendiente de cooperativa",
-    description: "Tu solicitud esta siendo evaluada.",
+    label: "Pendiente",
+    description: "Tu solicitud fue creada.",
     className: "bg-yellow-50 text-yellow-700 ring-yellow-200",
     step: 1,
   },
-  APPROVED_BY_COOPERATIVE: {
-    label: "Aprobada por cooperativa",
-    description: "La cooperativa aprobo la solicitud.",
-    className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-    step: 2,
-  },
-  WAITING_SELLER_APPROVAL: {
-    label: "Pendiente del vendedor",
-    description: "El vendedor debe confirmar disponibilidad.",
+  SENT_TO_COOPERATIVE: {
+    label: "Enviada a CoopHispánica",
+    description: "Tu solicitud fue enviada a la cooperativa.",
     className: "bg-blue-50 text-blue-700 ring-blue-200",
     step: 2,
   },
-  WAITING_DOWN_PAYMENT: {
-    label: "Pendiente de inicial",
-    description: "Paga la inicial para activar el financiamiento.",
+  UNDER_REVIEW: {
+    label: "En evaluación",
+    description: "CoopHispánica está evaluando tu solicitud.",
+    className: "bg-yellow-50 text-yellow-700 ring-yellow-200",
+    step: 2,
+  },
+  APPROVED_BY_COOPERATIVE: {
+    label: "Aprobada",
+    description: "CoopHispánica aprobó tu solicitud.",
+    className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    step: 3,
+  },
+  COUNTER_OFFER: {
+    label: "Contraoferta",
+    description: "CoopHispánica envió una oferta diferente.",
     className: "bg-orange-50 text-orange-700 ring-orange-200",
     step: 3,
   },
+  CUSTOMER_ACCEPTED: {
+    label: "Oferta aceptada",
+    description: "Aceptaste la oferta. Falta completar el pago.",
+    className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    step: 4,
+  },
+  WAITING_COOPERATIVE_PAYMENT: {
+    label: "Pendiente de pago",
+    description: "Debes completar el pago en CoopHispánica.",
+    className: "bg-orange-50 text-orange-700 ring-orange-200",
+    step: 4,
+  },
   ACTIVE: {
     label: "Activo",
-    description: "Financiamiento activo.",
+    description: "CoopHispánica confirmó el pago.",
     className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
     step: 5,
   },
   COMPLETED: {
     label: "Completado",
-    description: "Todas las cuotas fueron pagadas.",
+    description: "El financiamiento fue completado.",
     className: "bg-slate-100 text-slate-700 ring-slate-200",
     step: 6,
   },
   LATE: {
     label: "En mora",
-    description: "Tienes pagos vencidos.",
+    description: "Tienes pagos pendientes en CoopHispánica.",
     className: "bg-red-50 text-red-700 ring-red-200",
-    step: 4,
-  },
-  APPROVED: {
-    label: "Aprobado",
-    description: "Solicitud aprobada.",
-    className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-    step: 2,
+    step: 5,
   },
   REJECTED: {
     label: "Rechazado",
@@ -82,9 +91,9 @@ const statusMap: Record<
 
 const steps = [
   "Solicitud",
-  "Cooperativa",
-  "Vendedor",
-  "Inicial",
+  "CoopHispánica",
+  "Aprobación",
+  "Pago",
   "Activo",
   "Completado",
 ];
@@ -93,12 +102,7 @@ export default function CustomerFinancingPage() {
   const user = useAuthStore.getState().user;
   const [financings, setFinancings] = useState<Financing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [payingInstallmentId, setPayingInstallmentId] = useState<string | null>(
-    null,
-  );
-  const [payingDownPaymentId, setPayingDownPaymentId] = useState<string | null>(
-    null,
-  );
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadFinancings();
@@ -122,29 +126,39 @@ export default function CustomerFinancingPage() {
     }
   };
 
-  const handlePayInstallment = async (installmentId: string) => {
+  const handleOpenCooperativePayment = async (financingId: string) => {
     try {
-      setPayingInstallmentId(installmentId);
-      await payInstallment(installmentId);
-      await loadFinancings();
-      toast.success("Cuota pagada");
+      setProcessingId(financingId);
+
+      const result = await getCooperativePaymentLink(financingId);
+
+      toast.success("Redirigiendo a CoopHispánica");
+
+      window.open(result.paymentUrl, "_blank");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error al pagar");
+      toast.error(
+        error.response?.data?.message || "No se pudo abrir CoopHispánica",
+      );
     } finally {
-      setPayingInstallmentId(null);
+      setProcessingId(null);
     }
   };
 
-  const handlePayDownPayment = async (financingId: string) => {
+  const handleAcceptCounterOffer = async (financingId: string) => {
     try {
-      setPayingDownPaymentId(financingId);
-      await payDownPayment(financingId);
+      setProcessingId(financingId);
+
+      await acceptCounterOffer(financingId);
+
+      toast.success("Contraoferta aceptada");
+
       await loadFinancings();
-      toast.success("Inicial pagada correctamente");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error pagando inicial");
+      toast.error(
+        error.response?.data?.message || "Error aceptando contraoferta",
+      );
     } finally {
-      setPayingDownPaymentId(null);
+      setProcessingId(null);
     }
   };
 
@@ -153,13 +167,15 @@ export default function CustomerFinancingPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-emerald-600">
-            Pagos
+            CoopHispánica
           </p>
+
           <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
             Mis Financiamientos
           </h1>
+
           <p className="mt-2 text-sm font-medium text-slate-500">
-            {activeCount} activos · seguimiento de solicitudes y cuotas.
+            {activeCount} activos · seguimiento de solicitudes.
           </p>
         </div>
 
@@ -179,6 +195,7 @@ export default function CustomerFinancingPage() {
         ) : financings.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
             <CreditCard className="mx-auto h-8 w-8 text-slate-400" />
+
             <h2 className="mt-5 text-xl font-black text-slate-800">
               No tienes financiamientos
             </h2>
@@ -188,10 +205,9 @@ export default function CustomerFinancingPage() {
             <FinancingCard
               key={financing.id}
               financing={financing}
-              payingDownPaymentId={payingDownPaymentId}
-              payingInstallmentId={payingInstallmentId}
-              onPayDownPayment={handlePayDownPayment}
-              onPayInstallment={handlePayInstallment}
+              processingId={processingId}
+              onPayInCooperative={handleOpenCooperativePayment}
+              onAcceptCounterOffer={handleAcceptCounterOffer}
             />
           ))
         )}
@@ -202,19 +218,23 @@ export default function CustomerFinancingPage() {
 
 function FinancingCard({
   financing,
-  payingDownPaymentId,
-  payingInstallmentId,
-  onPayDownPayment,
-  onPayInstallment,
+  processingId,
+  onPayInCooperative,
+  onAcceptCounterOffer,
 }: {
   financing: Financing;
-  payingDownPaymentId: string | null;
-  payingInstallmentId: string | null;
-  onPayDownPayment: (id: string) => void;
-  onPayInstallment: (id: string) => void;
+  processingId: string | null;
+  onPayInCooperative: (id: string) => void;
+  onAcceptCounterOffer: (id: string) => void;
 }) {
   const status = statusMap[financing.status] || statusMap.PENDING;
-  const canPayDownPayment = financing.status === "WAITING_DOWN_PAYMENT";
+
+  const canPayInCooperative =
+    financing.status === "WAITING_COOPERATIVE_PAYMENT" ||
+    financing.status === "CUSTOMER_ACCEPTED";
+
+  const canAcceptCounterOffer = financing.status === "COUNTER_OFFER";
+
   const canShowInstallments = ["ACTIVE", "LATE", "COMPLETED"].includes(
     financing.status,
   );
@@ -233,32 +253,52 @@ function FinancingCard({
             <h2 className="text-2xl font-black text-slate-950">
               {financing.product.title}
             </h2>
+
             <span
               className={`rounded-full px-4 py-2 text-xs font-black ring-1 ${status.className}`}
             >
               {status.label}
             </span>
           </div>
+
           <p className="mt-2 text-sm font-bold text-slate-500">
             {status.description}
           </p>
+
           <p className="mt-3 text-lg font-black text-emerald-700">
-            Inicial: RD${financing.downPayment.toLocaleString()} · RD$
-            {financing.monthlyPayment.toLocaleString()} / mes
+            Inicial estimada: RD$
+            {Number(financing.downPayment || 0).toLocaleString()} · Cuota
+            estimada: RD$
+            {Number(financing.monthlyPayment || 0).toLocaleString()} / mes
           </p>
         </div>
 
-        {canPayDownPayment && (
-          <button
-            onClick={() => onPayDownPayment(financing.id)}
-            disabled={payingDownPaymentId === financing.id}
-            className="rounded-xl bg-emerald-600 px-5 py-3 font-black text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {payingDownPaymentId === financing.id
-              ? "Pagando..."
-              : `Pagar inicial RD${financing.downPayment.toLocaleString()}`}
-          </button>
-        )}
+        <div className="flex flex-col gap-3">
+          {canAcceptCounterOffer && (
+            <button
+              onClick={() => onAcceptCounterOffer(financing.id)}
+              disabled={processingId === financing.id}
+              className="rounded-xl bg-emerald-600 px-5 py-3 font-black text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              {processingId === financing.id
+                ? "Procesando..."
+                : "Aceptar contraoferta"}
+            </button>
+          )}
+
+          {canPayInCooperative && (
+            <button
+              onClick={() => onPayInCooperative(financing.id)}
+              disabled={processingId === financing.id}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-black text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              <ExternalLink className="h-5 w-5" />
+              {processingId === financing.id
+                ? "Abriendo..."
+                : "Pagar en CoopHispánica"}
+            </button>
+          )}
+        </div>
       </div>
 
       <Timeline
@@ -272,20 +312,22 @@ function FinancingCard({
         </div>
       )}
 
+      {financing.status === "COUNTER_OFFER" && financing.counterOffer && (
+        <div className="mt-5 rounded-xl bg-orange-50 p-4 text-sm font-bold text-orange-700">
+          CoopHispánica envió una contraoferta. Revisa los términos antes de
+          aceptar.
+        </div>
+      )}
+
       {canShowInstallments && (
         <div className="mt-6 grid gap-3">
           {financing.installments.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm font-bold text-slate-500">
-              La cooperativa todavia no ha sincronizado las cuotas.
+              CoopHispánica todavía no ha sincronizado las cuotas.
             </div>
           ) : (
             financing.installments.map((installment) => (
-              <InstallmentRow
-                key={installment.id}
-                installment={installment}
-                isPaying={payingInstallmentId === installment.id}
-                onPay={onPayInstallment}
-              />
+              <InstallmentRow key={installment.id} installment={installment} />
             ))
           )}
         </div>
@@ -302,7 +344,7 @@ function Timeline({
   rejected: boolean;
 }) {
   return (
-    <div className="mt-6 grid gap-2 sm:grid-cols-5">
+    <div className="mt-6 grid gap-2 sm:grid-cols-6">
       {steps.map((step, index) => {
         const number = index + 1;
         const done = !rejected && currentStep >= number;
@@ -327,6 +369,7 @@ function Timeline({
                 <Clock className="h-4 w-4" />
               )}
             </div>
+
             {step}
           </div>
         );
@@ -335,15 +378,7 @@ function Timeline({
   );
 }
 
-function InstallmentRow({
-  installment,
-  isPaying,
-  onPay,
-}: {
-  installment: Installment;
-  isPaying: boolean;
-  onPay: (id: string) => void;
-}) {
+function InstallmentRow({ installment }: { installment: Installment }) {
   const isPaid = installment.paid || installment.status === "PAID";
   const isOverdue = installment.status === "OVERDUE";
 
@@ -353,41 +388,34 @@ function InstallmentRow({
         <div className="grid h-10 w-10 place-items-center rounded-lg bg-white text-emerald-700 ring-1 ring-slate-200">
           <CalendarDays className="h-5 w-5" />
         </div>
+
         <div>
           <p className="font-black text-slate-900">
             Cuota #{installment.number}
           </p>
+
           <p className="text-sm font-medium text-slate-500">
             {new Date(installment.dueDate).toLocaleDateString()}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4 sm:justify-end">
-        <div className="text-right">
-          <p className="font-black text-emerald-700">
-            RD${installment.amount.toLocaleString()}
-          </p>
-          <p
-            className={`text-sm font-bold ${isPaid ? "text-emerald-700" : isOverdue ? "text-red-500" : "text-slate-500"}`}
-          >
-            {isPaid ? "Pagado" : isOverdue ? "Vencida" : "Pendiente"}
-          </p>
-        </div>
+      <div className="text-right">
+        <p className="font-black text-emerald-700">
+          RD${Number(installment.amount || 0).toLocaleString()}
+        </p>
 
-        {!isPaid && (
-          <button
-            onClick={() => onPay(installment.id)}
-            disabled={isPaying}
-            className={`rounded-xl px-4 py-2 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 ${
-              isOverdue
-                ? "bg-red-500 hover:bg-red-400"
-                : "bg-emerald-600 hover:bg-emerald-500"
-            }`}
-          >
-            {isPaying ? "Pagando..." : isOverdue ? "Pagar mora" : "Pagar"}
-          </button>
-        )}
+        <p
+          className={`text-sm font-bold ${
+            isPaid
+              ? "text-emerald-700"
+              : isOverdue
+                ? "text-red-500"
+                : "text-slate-500"
+          }`}
+        >
+          {isPaid ? "Pagado" : isOverdue ? "Vencida" : "Pendiente"}
+        </p>
       </div>
     </div>
   );

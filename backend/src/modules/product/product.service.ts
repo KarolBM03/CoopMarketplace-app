@@ -44,7 +44,8 @@ export const createProduct = async (data: ProductData) => {
       imageUrl: data.imageUrl,
       sellerId: data.sellerId,
       category: data.category,
-      isFinanced: data.isFinanced,
+      isFinanced: true,
+      currency: "DOP",
     },
   });
 };
@@ -87,6 +88,10 @@ export const getProducts = async (
       ? { price: "asc" as const }
       : sort === "price_desc"
         ? { price: "desc" as const }
+        : sort === "best_selling"
+          ? { salesCount: "desc" as const }
+          : sort === "relevance"
+            ? { rankingScore: "desc" as const }
         : { createdAt: "desc" as const };
 
   const [products, total] = await Promise.all([
@@ -209,7 +214,13 @@ export const getProductById = async (productId: string) => {
     throw new Error("Producto no encontrado");
   }
 
-  return product;
+  return prisma.product.update({
+    where: { id: productId },
+    data: {
+      views: { increment: 1 },
+      rankingScore: { increment: 0.25 },
+    },
+  });
 };
 
 export const getSellerProducts = async (sellerId: string) => {

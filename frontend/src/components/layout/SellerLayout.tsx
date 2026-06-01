@@ -1,12 +1,12 @@
 import {
   Bell,
-  CreditCard,
   ChevronDown,
   Home,
   Hourglass,
   LogOut,
   Package,
   ShoppingBag,
+  Truck,
   Wallet,
 } from "lucide-react";
 import { useEffect } from "react";
@@ -21,9 +21,9 @@ const navItems = [
   { to: "/seller/sales", label: "Ventas", icon: ShoppingBag },
   { to: "/seller/wallet", label: "Billetera", icon: Wallet },
   {
-    to: "/seller/financing-requests",
-    label: "Solicitudes",
-    icon: CreditCard,
+    to: "/seller/shipments",
+    label: "Envios",
+    icon: Truck,
   },
   { to: "/seller/notifications", label: "Notificaciones", icon: Bell },
 ];

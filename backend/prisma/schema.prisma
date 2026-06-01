@@ -19,55 +19,62 @@ model User {
   email    String @unique
   password String
 
-  phone    String?
-  isVerified Boolean @default(false)
-  otpCode  String? 
-  otpExpiresAt DateTime?
-  refreshToken  String?
+  phone               String?
+  cooperativeMemberId String?
+  memberNumber        String?
+  isCooperativeMember Boolean   @default(false)
+  cooperativeStatus   String?
+  isVerified          Boolean   @default(false)
+  otpCode             String?
+  otpExpiresAt        DateTime?
+  refreshToken        String?
 
-  storeName   String?
-  mainCategory String?
-  city         String?
-  documentId   String?
-  bankAccount  String?
-  identityImageUrl  String?
-  sellerStatus   String? @default("PENDING")
-  acceptedTerms  Boolean @default(false)
+  storeName        String?
+  mainCategory     String?
+  city             String?
+  documentId       String?
+  bankAccount      String?
+  identityImageUrl String?
+  sellerStatus     String? @default("PENDING")
+  acceptedTerms    Boolean @default(false)
 
-  role Role @default(CUSTOMER)
-  isBlocked Boolean @default(false)
-  products Product[]
-  financings Financing[]
+  role          Role           @default(CUSTOMER)
+  isBlocked     Boolean        @default(false)
+  products      Product[]
+  financings    Financing[]
   notifications Notification[]
   ledgerEntries LedgerEntry[]
-  transactions Transaction[]
-  wallet Wallet?
-  orders Order[]
-  loans Loan[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  transactions  Transaction[]
+  wallet        Wallet?
+  orders        Order[]
+  loans         Loan[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  resetPasswordToken String?
+  resetPasswordToken   String?
   resetPasswordExpires DateTime?
 }
 
 model Product {
-  id String @id @default(uuid())
-  title       String
-  description String
-  price       Decimal @db.Decimal(18,2)
-  stock Int
-  imageUrl String?
-  isFinanced Boolean @default(true)
-  currency String @default("DOP")
-  isActive   Boolean @default(true)
-  financings Financing[]
-  orderItems OrderItem[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  sellerId String
-  seller   User   @relation(fields: [sellerId], references: [id])
-  category String @default("Otros")
+  id           String      @id @default(uuid())
+  title        String
+  description  String
+  price        Decimal     @db.Decimal(18, 2)
+  stock        Int
+  imageUrl     String?
+  isFinanced   Boolean     @default(true)
+  currency     String      @default("DOP")
+  isActive     Boolean     @default(true)
+  financings   Financing[]
+  orderItems   OrderItem[]
+  views        Int         @default(0)
+  salesCount   Int         @default(0)
+  rankingScore Float       @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  sellerId     String
+  seller       User        @relation(fields: [sellerId], references: [id])
+  category     String      @default("Otros")
 
   @@index([isActive, category])
   @@index([sellerId, isActive])
@@ -76,46 +83,47 @@ model Product {
 }
 
 model Financing {
-  id         String @id @default(uuid())
-  customerId String
-  cedula     String?
-  income     Float?
-  company    String?
-  phone      String?
-  address    String?
-  productId  String
-  totalAmount   Decimal @db.Decimal(18,2)
-  downPayment   Decimal @db.Decimal(18,2)
-  remainingDebt Decimal @db.Decimal(18,2)
-  months         Int
-  monthlyPayment Decimal @db.Decimal(18,2)
-  status FinancingStatus @default(PENDING)
-  externalLoanId String?
-  externalStatus String?
+  id                String          @id @default(uuid())
+  customerId        String
+  cedula            String?
+  income            Float?
+  company           String?
+  phone             String?
+  address           String?
+  productId         String
+  totalAmount       Decimal         @db.Decimal(18, 2)
+  downPayment       Decimal         @db.Decimal(18, 2)
+  remainingDebt     Decimal         @db.Decimal(18, 2)
+  months            Int
+  monthlyPayment    Decimal         @db.Decimal(18, 2)
+  status            FinancingStatus @default(PENDING)
+  externalLoanId    String?
+  externalStatus    String?
   externalReference String?
-  currency String @default("DOP")
-  exchangeRate Float?
+  currency          String          @default("DOP")
+  exchangeRate      Float?
 
-  requestedAmount Float?
-  requestedMonths Int?
+  requestedAmount         Float?
+  requestedMonths         Int?
   requestedMonthlyPayment Float?
 
-  approvedAmount Float?
-  approvedMonths Int?
+  approvedAmount         Float?
+  approvedMonths         Int?
   approvedMonthlyPayment Float?
 
-  counterOffer Json?
-  customerAcceptedAt DateTime?
+  counterOffer        Json?
+  customerAcceptedAt  DateTime?
   sentToCooperativeAt DateTime?
-  activatedAt DateTime?
+  activatedAt         DateTime?
   cooperativeResponse Json?
-  approvedAt DateTime?
-  rejectedAt DateTime?
-  rejectionReason String?
-  createdAt DateTime @default(now())
-  customer User    @relation(fields: [customerId], references: [id])
-  product  Product @relation(fields: [productId], references: [id])
-  installments Installment[]
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  rejectionReason     String?
+  createdAt           DateTime      @default(now())
+  customer            User          @relation(fields: [customerId], references: [id])
+  product             Product       @relation(fields: [productId], references: [id])
+  installments        Installment[]
+  shipments           Shipment[]
 
   @@index([customerId, status])
   @@index([productId, status])
@@ -124,19 +132,19 @@ model Financing {
 }
 
 model Installment {
-  id          String @id @default(uuid())
-  financingId String
-  number Int
-  amount  Float
-  dueDate DateTime
-  paid   Boolean   @default(false)
-  paidAt DateTime?
+  id                    String    @id @default(uuid())
+  financingId           String
+  number                Int
+  amount                Float
+  dueDate               DateTime
+  paid                  Boolean   @default(false)
+  paidAt                DateTime?
   externalInstallmentId String?
-  externalStatus String?
-  paidAmount Float?
-  createdAt DateTime @default(now())
-  financing Financing @relation(fields: [financingId], references: [id])
-  status String @default("PENDING")
+  externalStatus        String?
+  paidAmount            Float?
+  createdAt             DateTime  @default(now())
+  financing             Financing @relation(fields: [financingId], references: [id])
+  status                String    @default("PENDING")
 }
 
 enum FinancingStatus {
@@ -154,25 +162,25 @@ enum FinancingStatus {
 }
 
 model Notification {
-  id String @id @default(uuid())
-  userId String
-  title   String
-  message String
-  read Boolean @default(false)
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
   createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model LedgerEntry {
-  id String @id @default(uuid())
-  userId String
-  type LedgerType
-  amount Float
-  currency String @default("DOP")
-  reference String
+  id          String     @id @default(uuid())
+  userId      String
+  type        LedgerType
+  amount      Float
+  currency    String     @default("DOP")
+  reference   String
   description String
-  createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id])
+  createdAt   DateTime   @default(now())
+  user        User       @relation(fields: [userId], references: [id])
 }
 
 enum LedgerType {
@@ -181,19 +189,18 @@ enum LedgerType {
 }
 
 model Transaction {
-
-  id String @id @default(uuid())
-  userId String
-  amount Float
-  type TransactionType
-  status TransactionStatus
-  currency String @default("DOP")
-  reference String?
-  description String?
-  createdAt DateTime @default(now())
-  idempotencyKey String? @unique
+  id                String            @id @default(uuid())
+  userId            String
+  amount            Float
+  type              TransactionType
+  status            TransactionStatus
+  currency          String            @default("DOP")
+  reference         String?
+  description       String?
+  createdAt         DateTime          @default(now())
+  idempotencyKey    String?           @unique
   providerReference String?
-  user User @relation(fields: [userId], references: [id])
+  user              User              @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
   @@index([reference])
@@ -214,62 +221,70 @@ enum TransactionStatus {
 }
 
 model Wallet {
-  id String @id @default(uuid())
-  userId String @unique
-  balance Decimal @db.Decimal(18,2)
-  frozenBalance Decimal @db.Decimal(18,2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id])
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  balance       Decimal  @default(0) @db.Decimal(18, 2)
+  frozenBalance Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
 }
 
 model Order {
-  id String @id @default(uuid())
-  customerId String
-  totalAmount Decimal @db.Decimal(18,2)
-  currency String @default("DOP")
-  status OrderStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  customer User @relation(fields: [customerId], references: [id])
-  items OrderItem[]
+  id                  String      @id @default(uuid())
+  customerId          String
+  totalAmount         Decimal     @db.Decimal(18, 2)
+  currency            String      @default("DOP")
+  externalPaymentId   String?
+  externalReference   String?
+  externalStatus      String?
+  cooperativeResponse Json?
+  status              OrderStatus @default(PENDING)
+  createdAt           DateTime    @default(now())
+  customer            User        @relation(fields: [customerId], references: [id])
+  items               OrderItem[]
+  shipments           Shipment[]
 }
 
 model OrderItem {
-  id String @id @default(uuid())
-  orderId String
+  id        String  @id @default(uuid())
+  orderId   String
   productId String
-  quantity Int
-  price Float
-  order Order @relation(fields: [orderId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
 }
 
 enum OrderStatus {
   PENDING
   PAID
+  PREPARING
+  SHIPPED
+  DELIVERED
   CANCELLED
   COMPLETED
 }
 
 model AuditLog {
-  id String @id @default(uuid())
-  userId String?
-  action String
-  entity String
-  entityId String
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entity      String
+  entityId    String
   description String
-  metadata Json?
-  ip String?
-  createdAt DateTime @default(now())
+  metadata    Json?
+  ip          String?
+  createdAt   DateTime @default(now())
 }
 
 model FraudAlert {
-  id String @id @default(uuid())
-  userId String
-  reason String
+  id        String    @id @default(uuid())
+  userId    String
+  reason    String
   riskLevel RiskLevel
-  resolved Boolean @default(false)
-  createdAt DateTime @default(now())
+  resolved  Boolean   @default(false)
+  createdAt DateTime  @default(now())
 }
 
 enum RiskLevel {
@@ -279,37 +294,77 @@ enum RiskLevel {
 }
 
 model Loan {
-  id                 String   @id @default(uuid())
-  userId             String
+  id     String @id @default(uuid())
+  userId String
 
   amount             Float
   months             Int
   annualInterestRate Float
 
-  monthlyPayment     Float
-  totalPayment       Float
-  totalInterest      Float
+  monthlyPayment Float
+  totalPayment   Float
+  totalInterest  Float
 
-  income             Float
-  company            String
-  documentId         String
+  income     Float
+  company    String
+  documentId String
 
-  score              Int
-  status             String   @default("PENDING")
-  externalLoanId     String?
-  externalStatus     String?
-  externalReference  String?
+  score               Int
+  status              String    @default("PENDING")
+  externalLoanId      String?
+  externalStatus      String?
+  externalReference   String?
   cooperativeResponse Json?
-  approvedAt         DateTime?
-  rejectedAt         DateTime?
-  rejectionReason    String?
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  rejectionReason     String?
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user               User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId, status])
   @@index([externalLoanId])
   @@index([externalReference])
+}
+
+model Shipment {
+  id              String         @id @default(uuid())
+  orderId         String
+  sellerId        String
+  customerId      String
+  financingId     String?
+  status          ShipmentStatus @default(PENDING_PREPARATION)
+  trackingNumber  String?
+  shippingAddress String?
+  province        String?
+  city            String?
+  sector          String?
+  reference       String?
+  phone           String?
+  notes           String?
+  preparedAt      DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  order     Order      @relation(fields: [orderId], references: [id])
+  financing Financing? @relation(fields: [financingId], references: [id])
+
+  @@index([orderId])
+  @@index([sellerId, status])
+  @@index([customerId, status])
+  @@index([financingId])
+}
+
+enum ShipmentStatus {
+  PENDING_PREPARATION
+  PREPARING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+  FAILED
 }

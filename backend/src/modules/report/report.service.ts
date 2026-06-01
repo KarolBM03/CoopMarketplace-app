@@ -40,7 +40,7 @@ export const generateFinancialReport = async ({
     .reduce((sum, transaction) => sum + transaction.amount, 0);
 
   const financingTotal = financings.reduce(
-    (sum, financing) => sum + financing.totalAmount,
+    (sum, financing) => sum + Number(financing.totalAmount),
     0,
   );
 

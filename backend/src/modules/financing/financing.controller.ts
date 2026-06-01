@@ -50,12 +50,9 @@ export const adminFinancings = async (req: Request, res: Response) => {
       Number(req.query.page) || 1,
       Number(req.query.limit) || 10,
     );
-
     res.json(financings);
   } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -68,13 +65,11 @@ export const cooperativeApprove = async (req: AuthRequest, res: Response) => {
 
     res.json(financing);
   } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
+    res.status(400).json({ message: error.message });
   }
 };
 
-export const reject = async (req: AuthRequest, res: Response) => {
+export const cooperativeReject = async (req: AuthRequest, res: Response) => {
   try {
     const financing = await rejectFinancing(
       req.params.financingId as string,
@@ -84,9 +79,7 @@ export const reject = async (req: AuthRequest, res: Response) => {
 
     res.json(financing);
   } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -100,9 +93,7 @@ export const counterOffer = async (req: AuthRequest, res: Response) => {
 
     res.json(financing);
   } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -110,14 +101,12 @@ export const acceptOffer = async (req: AuthRequest, res: Response) => {
   try {
     const financing = await acceptCounterOffer(
       req.params.financingId as string,
-      req.user?.id as string,
+      req.user?.id,
     );
 
     res.json(financing);
   } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -125,37 +114,31 @@ export const paymentLink = async (req: AuthRequest, res: Response) => {
   try {
     const result = await getCooperativePaymentLink(
       req.params.financingId as string,
-      req.user?.id as string,
     );
 
     res.json(result);
   } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
+    res.status(400).json({ message: error.message });
   }
 };
 
 export const confirmPayment = async (req: Request, res: Response) => {
   try {
-    const signature = req.headers["x-signature"];
+    const callbackSecret = process.env.COOP_CALLBACK_SECRET;
+    const signature = req.headers["x-coop-signature"];
 
-    if (signature !== global.process.env.COOP_CALLBACK_SECRET) {
-      return res.status(401).json({
-        message: "Callback no autorizado",
-      });
+    if (callbackSecret && signature !== callbackSecret) {
+      return res.status(401).json({ message: "Callback no autorizado" });
     }
 
-    const financing = await confirmCooperativePayment(
-      req.params.financingId as string,
-      req.body.externalReference,
-      req.body,
-    );
+    const financing = await confirmCooperativePayment({
+      financingId: req.params.financingId as string,
+      externalReference: req.body.externalReference,
+      cooperativeResponse: req.body,
+    });
 
     res.json(financing);
   } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
+    res.status(400).json({ message: error.message });
   }
 };
