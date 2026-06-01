@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import {
-  adminApproveFinancing,
-  approveFinancing,
+  acceptCounterOffer,
+  approveByCooperative,
+  confirmCooperativePayment,
+  createCounterOffer,
   createFinancing,
   getAdminFinancings,
+  getCooperativePaymentLink,
   getCustomerFinancing,
-  getSellerPendingFinancings,
-  payDownPayment,
   rejectFinancing,
 } from "./financing.service";
 
@@ -43,62 +44,33 @@ export const getByCustomer = async (req: Request, res: Response) => {
   }
 };
 
-export const getPendingBySeller = async (req: Request, res: Response) => {
-  try {
-    const financings = await getSellerPendingFinancings(
-      req.params.sellerId as string,
-    );
-
-    res.json(financings);
-  } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
-  }
-};
-
-export const sellerApprove = async (req: AuthRequest, res: Response) => {
-  try {
-    const financing = await approveFinancing(
-      req.params.financingId as string,
-      req.user?.role === "ADMIN" && req.body.sellerId
-        ? (req.body.sellerId as string)
-        : (req.user?.id as string),
-      req.user?.id,
-    );
-
-    res.json(financing);
-  } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
-  }
-};
-
-export const adminApprove = async (req: AuthRequest, res: Response) => {
-  try {
-    const financing = await adminApproveFinancing(
-      req.params.financingId as string,
-      req.user?.id,
-    );
-
-    res.json(financing);
-  } catch (error: any) {
-    res.status(400).json({
-      message: error.message,
-    });
-  }
-};
-
 export const adminFinancings = async (req: Request, res: Response) => {
   try {
     const financings = await getAdminFinancings(
       Number(req.query.page) || 1,
       Number(req.query.limit) || 10,
     );
+
     res.json(financings);
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
+export const cooperativeApprove = async (req: AuthRequest, res: Response) => {
+  try {
+    const financing = await approveByCooperative(
+      req.params.financingId as string,
+      req.user?.id,
+    );
+
+    res.json(financing);
+  } catch (error: any) {
+    res.status(400).json({
+      message: error.message,
+    });
   }
 };
 
@@ -107,22 +79,79 @@ export const reject = async (req: AuthRequest, res: Response) => {
     const financing = await rejectFinancing(
       req.params.financingId as string,
       req.user?.id,
-      req.user?.role,
       req.body?.reason,
     );
+
     res.json(financing);
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      message: error.message,
+    });
   }
 };
 
-export const payInicial = async (req: AuthRequest, res: Response) => {
+export const counterOffer = async (req: AuthRequest, res: Response) => {
   try {
-    const financing = await payDownPayment(
+    const financing = await createCounterOffer(
       req.params.financingId as string,
+      req.body,
       req.user?.id,
-      req.headers["idempotency-key"] as string | undefined,
     );
+
+    res.json(financing);
+  } catch (error: any) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
+export const acceptOffer = async (req: AuthRequest, res: Response) => {
+  try {
+    const financing = await acceptCounterOffer(
+      req.params.financingId as string,
+      req.user?.id as string,
+    );
+
+    res.json(financing);
+  } catch (error: any) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
+export const paymentLink = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await getCooperativePaymentLink(
+      req.params.financingId as string,
+      req.user?.id as string,
+    );
+
+    res.json(result);
+  } catch (error: any) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
+export const confirmPayment = async (req: Request, res: Response) => {
+  try {
+    const signature = req.headers["x-signature"];
+
+    if (signature !== global.process.env.COOP_CALLBACK_SECRET) {
+      return res.status(401).json({
+        message: "Callback no autorizado",
+      });
+    }
+
+    const financing = await confirmCooperativePayment(
+      req.params.financingId as string,
+      req.body.externalReference,
+      req.body,
+    );
+
     res.json(financing);
   } catch (error: any) {
     res.status(400).json({

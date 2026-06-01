@@ -55,10 +55,11 @@ model Product {
   id String @id @default(uuid())
   title       String
   description String
-  price       Float
+  price       Decimal @db.Decimal(18,2)
   stock Int
   imageUrl String?
-  isFinanced Boolean @default(false)
+  isFinanced Boolean @default(true)
+  currency String @default("DOP")
   isActive   Boolean @default(true)
   financings Financing[]
   orderItems OrderItem[]
@@ -83,15 +84,30 @@ model Financing {
   phone      String?
   address    String?
   productId  String
-  totalAmount   Float
-  downPayment   Float
-  remainingDebt Float
+  totalAmount   Decimal @db.Decimal(18,2)
+  downPayment   Decimal @db.Decimal(18,2)
+  remainingDebt Decimal @db.Decimal(18,2)
   months         Int
-  monthlyPayment Float
+  monthlyPayment Decimal @db.Decimal(18,2)
   status FinancingStatus @default(PENDING)
   externalLoanId String?
   externalStatus String?
   externalReference String?
+  currency String @default("DOP")
+  exchangeRate Float?
+
+  requestedAmount Float?
+  requestedMonths Int?
+  requestedMonthlyPayment Float?
+
+  approvedAmount Float?
+  approvedMonths Int?
+  approvedMonthlyPayment Float?
+
+  counterOffer Json?
+  customerAcceptedAt DateTime?
+  sentToCooperativeAt DateTime?
+  activatedAt DateTime?
   cooperativeResponse Json?
   approvedAt DateTime?
   rejectedAt DateTime?
@@ -115,6 +131,9 @@ model Installment {
   dueDate DateTime
   paid   Boolean   @default(false)
   paidAt DateTime?
+  externalInstallmentId String?
+  externalStatus String?
+  paidAmount Float?
   createdAt DateTime @default(now())
   financing Financing @relation(fields: [financingId], references: [id])
   status String @default("PENDING")
@@ -122,14 +141,16 @@ model Installment {
 
 enum FinancingStatus {
   PENDING
+  SENT_TO_COOPERATIVE
+  UNDER_REVIEW
   APPROVED_BY_COOPERATIVE
-  WAITING_SELLER_APPROVAL
-  WAITING_DOWN_PAYMENT
+  COUNTER_OFFER
+  CUSTOMER_ACCEPTED
+  WAITING_COOPERATIVE_PAYMENT
   ACTIVE
+  REJECTED
   COMPLETED
   LATE
-  APPROVED
-  REJECTED
 }
 
 model Notification {
@@ -147,6 +168,7 @@ model LedgerEntry {
   userId String
   type LedgerType
   amount Float
+  currency String @default("DOP")
   reference String
   description String
   createdAt DateTime @default(now())
@@ -165,6 +187,7 @@ model Transaction {
   amount Float
   type TransactionType
   status TransactionStatus
+  currency String @default("DOP")
   reference String?
   description String?
   createdAt DateTime @default(now())
@@ -193,8 +216,8 @@ enum TransactionStatus {
 model Wallet {
   id String @id @default(uuid())
   userId String @unique
-  balance Float @default(0)
-  frozenBalance Float @default(0)
+  balance Decimal @db.Decimal(18,2)
+  frozenBalance Decimal @db.Decimal(18,2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user User @relation(fields: [userId], references: [id])
@@ -203,7 +226,8 @@ model Wallet {
 model Order {
   id String @id @default(uuid())
   customerId String
-  totalAmount Float
+  totalAmount Decimal @db.Decimal(18,2)
+  currency String @default("DOP")
   status OrderStatus @default(PENDING)
   createdAt DateTime @default(now())
   customer User @relation(fields: [customerId], references: [id])

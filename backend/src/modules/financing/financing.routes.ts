@@ -1,13 +1,14 @@
 import { Router } from "express";
 import {
-  adminApprove,
+  acceptOffer,
+  adminFinancings,
+  confirmPayment,
+  cooperativeApprove,
+  counterOffer,
   create,
   getByCustomer,
-  getPendingBySeller,
-  adminFinancings,
+  paymentLink,
   reject,
-  payInicial,
-  sellerApprove,
 } from "./financing.controller";
 import { financingLimiter } from "../../middlewares/rateLimit.middleware";
 import { protect } from "../../middlewares/auth.middleware";
@@ -16,22 +17,36 @@ import { allowSelfOrAdmin } from "../../middlewares/ownership.middleware";
 
 const router = Router();
 
+router.post("/cooperative/:financingId/confirm-payment", confirmPayment);
+
 router.use(protect);
 
 router.post("/", financingLimiter, authorize("CUSTOMER", "ADMIN"), create);
-router.get("/customer/:customerId", allowSelfOrAdmin("customerId"), getByCustomer);
-router.get("/admin", authorize("ADMIN"), adminFinancings);
+
 router.get(
-  "/seller/:sellerId/pending",
-  authorize("SELLER", "ADMIN"),
-  allowSelfOrAdmin("sellerId"),
-  getPendingBySeller,
+  "/customer/:customerId",
+  allowSelfOrAdmin("customerId"),
+  getByCustomer,
 );
-router.patch("/:financingId/admin-approve", authorize("ADMIN"), adminApprove);
-router.patch("/:financingId/admin-reject", authorize("ADMIN"), reject);
-router.patch("/:financingId/seller-approve", authorize("SELLER", "ADMIN"), sellerApprove);
-router.patch("/:financingId/approve", authorize("SELLER", "ADMIN"), sellerApprove);
-router.patch("/:financingId/reject", authorize("SELLER", "ADMIN"), reject);
-router.patch("/:financingId/pay-down-payment", authorize("CUSTOMER", "ADMIN"), payInicial);
+
+router.get("/admin", authorize("ADMIN"), adminFinancings);
+
+router.patch(
+  "/:financingId/cooperative-approve",
+  authorize("ADMIN"),
+  cooperativeApprove,
+);
+
+router.patch("/:financingId/cooperative-reject", authorize("ADMIN"), reject);
+
+router.patch("/:financingId/counter-offer", authorize("ADMIN"), counterOffer);
+
+router.patch("/:financingId/accept-offer", authorize("CUSTOMER"), acceptOffer);
+
+router.get(
+  "/:financingId/payment-link",
+  authorize("CUSTOMER", "ADMIN"),
+  paymentLink,
+);
 
 export default router;

@@ -1,11 +1,7 @@
 import prisma from "../../config/prisma";
 import { FinancingStatus } from "@prisma/client";
 import { createNotification } from "../../services/notification.service";
-import { createTransaction } from "../../services/transaction.service";
-import { createLedgerEntry } from "../../services/ledger.service";
-import { disburseLoan } from "../cooperative/cooperative.service";
 import { createAuditLog } from "../../services/audit.service";
-import { createWallet } from "../../services/wallet.service";
 
 interface FinancingData {
   customerId: string;
@@ -36,17 +32,17 @@ export const createFinancing = async ({
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
+    include: {
+      seller: true,
+    },
   });
 
   if (!product) {
     throw new Error("Producto no encontrado");
   }
 
-  if (!product.isFinanced) {
-    throw new Error("Este producto no permite financiamiento");
-  }
-
-  const remainingDebt = product.price - downPayment;
+  const price = Number(product.price);
+  const remainingDebt = price - downPayment;
   const monthlyPayment = remainingDebt / months;
 
   const financing = await prisma.financing.create({
@@ -58,25 +54,51 @@ export const createFinancing = async ({
       phone,
       address,
       productId,
-      totalAmount: product.price,
+
+      totalAmount: price,
       downPayment,
       remainingDebt,
       months,
       monthlyPayment,
-      status: FinancingStatus.PENDING,
+
+      requestedAmount: remainingDebt,
+      requestedMonths: months,
+      requestedMonthlyPayment: monthlyPayment,
+
+      status: FinancingStatus.SENT_TO_COOPERATIVE,
+      sentToCooperativeAt: new Date(),
+      externalStatus: "SENT_TO_COOPERATIVE",
     },
     include: {
       product: true,
+      customer: true,
     },
   });
 
+  await createNotification(
+    customerId,
+    "Solicitud enviada",
+    `Tu solicitud de financiamiento para ${product.title} fue enviada a CoopHispánica.`,
+  );
+
+  await createNotification(
+    product.sellerId,
+    "Nueva solicitud de financiamiento",
+    `Un cliente solicitó financiamiento para ${product.title}. La solicitud está en evaluación por CoopHispánica.`,
+  );
+
   await createAuditLog({
     userId: customerId,
-    action: "FINANCING_REQUEST",
+    action: "FINANCING_SENT_TO_COOPERATIVE",
     entity: "FINANCING",
     entityId: financing.id,
-    description: "Solicitud de financiamiento creada",
-    metadata: { productId, downPayment, months },
+    description: "Solicitud de financiamiento enviada a CoopHispánica",
+    metadata: {
+      productId,
+      downPayment,
+      months,
+      requestedAmount: remainingDebt,
+    },
   });
 
   return financing;
@@ -152,14 +174,12 @@ export const getAdminFinancings = async (page = 1, limit = 10) => {
   };
 };
 
-export const adminApproveFinancing = async (
+export const approveByCooperative = async (
   financingId: string,
   actorId?: string,
 ) => {
   const financing = await prisma.financing.findUnique({
-    where: {
-      id: financingId,
-    },
+    where: { id: financingId },
     include: {
       customer: true,
       product: true,
@@ -170,48 +190,37 @@ export const adminApproveFinancing = async (
     throw new Error("Financiamiento no encontrado");
   }
 
-  if (financing.status !== FinancingStatus.PENDING) {
-    throw new Error("Solo puedes aprobar solicitudes pendientes");
-  }
-
   const updatedFinancing = await prisma.financing.update({
-    where: {
-      id: financingId,
-    },
+    where: { id: financingId },
     data: {
-      status: FinancingStatus.WAITING_SELLER_APPROVAL,
+      status: FinancingStatus.WAITING_COOPERATIVE_PAYMENT,
       approvedAt: new Date(),
       externalStatus: "APPROVED_BY_COOPERATIVE",
     },
     include: {
       customer: true,
       product: true,
-      installments: {
-        orderBy: {
-          number: "asc",
-        },
-      },
     },
   });
 
   await createNotification(
-    financing.product.sellerId,
-    "Financiamiento aprobado por cooperativa",
-    `La cooperativa aprobo el financiamiento de ${financing.customer.fullName} para ${financing.product.title}. Debes aprobarlo para que el cliente pague la inicial.`,
+    financing.customerId,
+    "Financiamiento aprobado",
+    `CoopHispánica aprobó tu solicitud para ${financing.product.title}. Debes completar el pago en la app de CoopHispánica.`,
   );
 
   await createNotification(
-    financing.customerId,
-    "Solicitud aprobada por cooperativa",
-    `La cooperativa aprobo tu solicitud para ${financing.product.title}. Falta la aprobacion del vendedor.`,
+    financing.product.sellerId,
+    "Financiamiento aprobado",
+    `CoopHispánica aprobó el financiamiento para ${financing.product.title}. Espera la confirmación de pago para preparar el producto.`,
   );
 
   await createAuditLog({
     userId: actorId,
-    action: "ADMIN_APPROVE_FINANCING",
+    action: "COOPERATIVE_APPROVE_FINANCING",
     entity: "FINANCING",
     entityId: financing.id,
-    description: "Financiamiento aprobado por cooperativa",
+    description: "Financiamiento aprobado por CoopHispánica",
     metadata: {
       previousStatus: financing.status,
       nextStatus: updatedFinancing.status,
@@ -224,13 +233,10 @@ export const adminApproveFinancing = async (
 export const rejectFinancing = async (
   financingId: string,
   actorId?: string,
-  actorRole?: string,
   reason = "Solicitud rechazada",
 ) => {
   const financing = await prisma.financing.findUnique({
-    where: {
-      id: financingId,
-    },
+    where: { id: financingId },
     include: {
       customer: true,
       product: true,
@@ -241,22 +247,13 @@ export const rejectFinancing = async (
     throw new Error("Financiamiento no encontrado");
   }
 
-  if (actorRole === "SELLER" && financing.product.sellerId !== actorId) {
-    throw new Error("No puedes rechazar este financiamiento");
-  }
-
   const updatedFinancing = await prisma.financing.update({
-    where: {
-      id: financingId,
-    },
+    where: { id: financingId },
     data: {
       status: FinancingStatus.REJECTED,
       rejectedAt: new Date(),
       rejectionReason: reason,
-      externalStatus:
-        actorRole === "ADMIN"
-          ? "REJECTED_BY_COOPERATIVE"
-          : "REJECTED_BY_SELLER",
+      externalStatus: "REJECTED_BY_COOPERATIVE",
     },
     include: {
       customer: true,
@@ -267,15 +264,12 @@ export const rejectFinancing = async (
   await createNotification(
     financing.customerId,
     "Financiamiento rechazado",
-    `Tu solicitud de financiamiento para ${financing.product.title} fue rechazada.`,
+    `Tu solicitud de financiamiento para ${financing.product.title} fue rechazada por CoopHispánica.`,
   );
 
   await createAuditLog({
     userId: actorId,
-    action:
-      actorRole === "ADMIN"
-        ? "ADMIN_REJECT_FINANCING"
-        : "SELLER_REJECT_FINANCING",
+    action: "COOPERATIVE_REJECT_FINANCING",
     entity: "FINANCING",
     entityId: financing.id,
     description: reason,
@@ -288,39 +282,13 @@ export const rejectFinancing = async (
   return updatedFinancing;
 };
 
-export const getSellerPendingFinancings = async (sellerId: string) => {
-  return await prisma.financing.findMany({
-    where: {
-      status: FinancingStatus.WAITING_SELLER_APPROVAL,
-      product: {
-        sellerId,
-      },
-    },
-    include: {
-      customer: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-        },
-      },
-      product: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-};
-
-export const approveFinancing = async (
+export const createCounterOffer = async (
   financingId: string,
-  sellerId: string,
+  counterOffer: any,
   actorId?: string,
 ) => {
   const financing = await prisma.financing.findUnique({
-    where: {
-      id: financingId,
-    },
+    where: { id: financingId },
     include: {
       customer: true,
       product: true,
@@ -331,67 +299,144 @@ export const approveFinancing = async (
     throw new Error("Financiamiento no encontrado");
   }
 
-  if (financing.product.sellerId !== sellerId) {
-    throw new Error("No puedes aprobar este financiamiento");
-  }
-
-  if (financing.status !== FinancingStatus.WAITING_SELLER_APPROVAL) {
-    throw new Error("La cooperativa debe aprobar primero esta solicitud");
-  }
-
   const updatedFinancing = await prisma.financing.update({
-    where: {
-      id: financing.id,
-    },
+    where: { id: financingId },
     data: {
-      status: FinancingStatus.WAITING_DOWN_PAYMENT,
+      status: FinancingStatus.COUNTER_OFFER,
+      externalStatus: "COUNTER_OFFER",
+      counterOffer,
+      cooperativeResponse: counterOffer,
     },
     include: {
+      customer: true,
       product: true,
-      installments: {
-        orderBy: {
-          number: "asc",
-        },
-      },
     },
   });
 
   await createNotification(
     financing.customerId,
-    "Financiamiento aprobado por vendedor",
-    `Tu financiamiento para ${financing.product.title} fue aprobado por el vendedor. Ahora debes pagar la inicial.`,
-  );
-
-  await createNotification(
-    sellerId,
-    "Financiamiento aprobado",
-    `Aprobaste el financiamiento de ${financing.customer.fullName} para ${financing.product.title}. Falta que el cliente pague la inicial.`,
+    "Contraoferta recibida",
+    `CoopHispánica envió una contraoferta para ${financing.product.title}.`,
   );
 
   await createAuditLog({
-    userId: actorId || sellerId,
-    action: "SELLER_APPROVE_FINANCING",
+    userId: actorId,
+    action: "COOPERATIVE_COUNTER_OFFER",
     entity: "FINANCING",
     entityId: financing.id,
-    description: "Financiamiento aprobado por vendedor",
-    metadata: {
-      sellerId,
-      previousStatus: financing.status,
-      nextStatus: updatedFinancing.status,
-    },
+    description: "Contraoferta enviada por CoopHispánica",
+    metadata: counterOffer,
   });
 
   return updatedFinancing;
 };
 
-export const payDownPayment = async (
+export const acceptCounterOffer = async (
   financingId: string,
-  actorId?: string,
-  idempotencyKey?: string,
+  customerId: string,
 ) => {
   const financing = await prisma.financing.findUnique({
-    where: {
-      id: financingId,
+    where: { id: financingId },
+    include: {
+      product: true,
+    },
+  });
+
+  if (!financing) {
+    throw new Error("Financiamiento no encontrado");
+  }
+
+  if (financing.customerId !== customerId) {
+    throw new Error("No puedes aceptar esta contraoferta");
+  }
+
+  if (financing.status !== FinancingStatus.COUNTER_OFFER) {
+    throw new Error("Este financiamiento no tiene contraoferta pendiente");
+  }
+
+  const updatedFinancing = await prisma.financing.update({
+    where: { id: financingId },
+    data: {
+      status: FinancingStatus.CUSTOMER_ACCEPTED,
+      customerAcceptedAt: new Date(),
+      externalStatus: "CUSTOMER_ACCEPTED",
+    },
+    include: {
+      product: true,
+    },
+  });
+
+  await createNotification(
+    financing.product.sellerId,
+    "Contraoferta aceptada",
+    "El cliente aceptó la contraoferta de CoopHispánica.",
+  );
+
+  return updatedFinancing;
+};
+
+export const getCooperativePaymentLink = async (
+  financingId: string,
+  customerId: string,
+) => {
+  const financing = await prisma.financing.findUnique({
+    where: { id: financingId },
+    include: {
+      product: true,
+    },
+  });
+
+  if (!financing) {
+    throw new Error("Financiamiento no encontrado");
+  }
+
+  if (financing.customerId !== customerId) {
+    throw new Error("No puedes pagar este financiamiento");
+  }
+
+  if (
+    financing.status !== FinancingStatus.WAITING_COOPERATIVE_PAYMENT &&
+    financing.status !== FinancingStatus.CUSTOMER_ACCEPTED
+  ) {
+    throw new Error("Este financiamiento no está listo para pago");
+  }
+
+  return {
+    message: "Completa el pago en CoopHispánica",
+    paymentUrl: process.env.COOP_PAYMENT_URL || "https://app.coophispanica.com",
+    financingId: financing.id,
+  };
+};
+
+export const confirmCooperativePayment = async (
+  financingId: string,
+  externalReference?: string,
+  cooperativeResponse?: any,
+) => {
+  const financing = await prisma.financing.findUnique({
+    where: { id: financingId },
+    include: {
+      customer: true,
+      product: true,
+    },
+  });
+
+  if (!financing) {
+    throw new Error("Financiamiento no encontrado");
+  }
+
+  if (financing.status === FinancingStatus.ACTIVE) {
+    return financing;
+  }
+
+  const updatedFinancing = await prisma.financing.update({
+    where: { id: financingId },
+    data: {
+      status: FinancingStatus.ACTIVE,
+      activatedAt: new Date(),
+      externalStatus: "PAYMENT_CONFIRMED",
+      externalReference,
+      cooperativeResponse,
     },
     include: {
       customer: true,
@@ -404,181 +449,27 @@ export const payDownPayment = async (
     },
   });
 
-  if (!financing) {
-    throw new Error("Financiamiento no encontrado");
-  }
-
-  if (actorId && actorId !== financing.customerId) {
-    const actor = await prisma.user.findUnique({ where: { id: actorId } });
-    if (actor?.role !== "ADMIN") {
-      throw new Error("No puedes pagar la inicial de este financiamiento");
-    }
-  }
-
-  if (financing.status !== FinancingStatus.WAITING_DOWN_PAYMENT) {
-    if (idempotencyKey) {
-      const existingTransaction = await prisma.transaction.findUnique({
-        where: { idempotencyKey },
-      });
-
-      if (existingTransaction && financing.status === FinancingStatus.ACTIVE) {
-        return financing;
-      }
-    }
-
-    throw new Error("Este financiamiento no requiere inicial");
-  }
-
-  if (idempotencyKey) {
-    const existingTransaction = await prisma.transaction.findUnique({
-      where: { idempotencyKey },
-    });
-
-    if (existingTransaction) {
-      return await prisma.financing.findUnique({
-        where: { id: financing.id },
-        include: {
-          product: true,
-          installments: {
-            orderBy: {
-              number: "asc",
-            },
-          },
-        },
-      });
-    }
-  }
-
-  const wallet = await prisma.wallet.findUnique({
-    where: {
-      userId: financing.customerId,
-    },
-  });
-
-  if (!wallet) {
-    throw new Error("Wallet no encontrada");
-  }
-
-  if (wallet.balance < financing.downPayment) {
-    throw new Error("Balance insuficiente para pagar inicial");
-  }
-
-  await prisma.wallet.update({
-    where: {
-      userId: financing.customerId,
-    },
-    data: {
-      balance: {
-        decrement: financing.downPayment,
-      },
-    },
-  });
-
-  await createTransaction({
-    userId: financing.customerId,
-    amount: financing.downPayment,
-    type: "PAYMENT",
-    status: "SUCCESS",
-    reference: financing.id,
-    description: "Pago inicial financiamiento",
-    idempotencyKey,
-  });
-
-  await createLedgerEntry({
-    userId: financing.customerId,
-    type: "DEBIT",
-    amount: financing.downPayment,
-    reference: financing.id,
-    description: "Pago inicial financiamiento",
-  });
-
-  let sellerWallet = await prisma.wallet.findUnique({
-    where: {
-      userId: financing.product.sellerId,
-    },
-  });
-
-  if (!sellerWallet) {
-    sellerWallet = await createWallet(financing.product.sellerId);
-  }
-
-  await prisma.wallet.update({
-    where: {
-      userId: financing.product.sellerId,
-    },
-    data: {
-      balance: {
-        increment: financing.downPayment,
-      },
-    },
-  });
-
-  await createTransaction({
-    userId: financing.product.sellerId,
-    amount: financing.downPayment,
-    type: "DEPOSIT",
-    status: "SUCCESS",
-    reference: financing.id,
-    description: "Inicial recibida por financiamiento",
-    idempotencyKey: idempotencyKey ? `${idempotencyKey}-seller` : undefined,
-  });
-
-  await createLedgerEntry({
-    userId: financing.product.sellerId,
-    type: "CREDIT",
-    amount: financing.downPayment,
-    reference: financing.id,
-    description: "Inicial recibida por financiamiento",
-  });
-
   await createNotification(
     financing.customerId,
-    "Inicial pagada",
-    `Pagaste la inicial de RD$${financing.downPayment.toLocaleString()} para ${financing.product.title}.`,
+    "Pago confirmado",
+    `CoopHispánica confirmó tu pago para ${financing.product.title}.`,
   );
 
   await createNotification(
     financing.product.sellerId,
-    "El cliente pago la inicial",
-    `${financing.customer.fullName} pago la inicial del financiamiento para ${financing.product.title}.`,
+    "Orden lista para preparar",
+    `El pago de ${financing.customer.fullName} fue confirmado. Ya puedes preparar y enviar ${financing.product.title}.`,
   );
 
-  const disbursement = await disburseLoan({
-    loanId: financing.id,
-    bankAccount: "PENDIENTE_COOPERATIVA",
-  });
-
-  const updatedFinancing = await prisma.financing.update({
-    where: {
-      id: financing.id,
-    },
-    data: {
-      status: FinancingStatus.ACTIVE,
-      externalReference: disbursement.transactionReference,
-      externalStatus: disbursement.status,
-      cooperativeResponse: disbursement,
-    },
-    include: {
-      product: true,
-      installments: {
-        orderBy: {
-          number: "asc",
-        },
-      },
-    },
-  });
-
   await createAuditLog({
-    userId: actorId || financing.customerId,
-    action: "PAY_DOWN_PAYMENT",
+    userId: financing.customerId,
+    action: "COOPERATIVE_PAYMENT_CONFIRMED",
     entity: "FINANCING",
     entityId: financing.id,
-    description: "Inicial pagada y financiamiento activado",
+    description: "Pago confirmado por CoopHispánica",
     metadata: {
-      amount: financing.downPayment,
-      idempotencyKey,
-      disbursement,
-      sellerId: financing.product.sellerId,
+      externalReference,
+      cooperativeResponse,
     },
   });
 
