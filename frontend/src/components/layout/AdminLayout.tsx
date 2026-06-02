@@ -7,6 +7,7 @@ import {
   CreditCard,
   FileText,
   Users,
+  MessageCircle,
 } from "lucide-react";
 import { useEffect } from "react";
 import { socket } from "../../socket";
@@ -20,6 +21,7 @@ const navItems = [
   { to: "/admin/sellers", label: "Vendedores", icon: ShieldCheck },
   { to: "/admin/financings", label: "Financiamientos", icon: CreditCard },
   { to: "/admin/reports", label: "Reportes", icon: FileText },
+  { to: "/admin/chats", label: "Chats", icon: MessageCircle },
 ];
 export default function AdminLayout() {
   const navigate = useNavigate();

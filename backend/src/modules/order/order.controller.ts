@@ -79,7 +79,10 @@ export const getSalesBySeller = async (req: Request, res: Response) => {
   }
 };
 
-export const cooperativePaymentLink = async (req: AuthRequest, res: Response) => {
+export const cooperativePaymentLink = async (
+  req: AuthRequest,
+  res: Response,
+) => {
   try {
     const result = await getOrderCooperativePaymentLink(
       req.params.orderId as string,
@@ -94,7 +97,10 @@ export const cooperativePaymentLink = async (req: AuthRequest, res: Response) =>
   }
 };
 
-export const confirmCooperativePayment = async (req: Request, res: Response) => {
+export const confirmCooperativePayment = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     const callbackSecret = process.env.COOP_CALLBACK_SECRET;
     const signature = req.headers["x-coop-signature"];
@@ -114,5 +120,24 @@ export const confirmCooperativePayment = async (req: Request, res: Response) => 
     res.status(400).json({
       message: error.message,
     });
+  }
+};
+
+// simulador para ver si funciona el envio//
+
+export const devConfirmPayment = async (req: AuthRequest, res: Response) => {
+  try {
+    const order = await confirmCooperativeOrderPayment({
+      orderId: req.params.orderId as string,
+      externalReference: `DEV-${Date.now()}`,
+      cooperativeResponse: {
+        mode: "DEV",
+        confirmedBy: req.user?.id,
+      },
+    });
+
+    res.json(order);
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
   }
 };

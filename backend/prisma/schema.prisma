@@ -53,6 +53,10 @@ model User {
 
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
+
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
+  messages            Message[]      @relation("UserMessages")
 }
 
 model Product {
@@ -75,6 +79,7 @@ model Product {
   sellerId     String
   seller       User        @relation(fields: [sellerId], references: [id])
   category     String      @default("Otros")
+  conversations Conversation[]
 
   @@index([isActive, category])
   @@index([sellerId, isActive])
@@ -350,6 +355,16 @@ model Shipment {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+  currentLatitude  Float?
+  currentLongitude Float?
+
+  trackingStartedAt DateTime?
+  trackingEndedAt   DateTime?
+
+  lastLocationAt DateTime?
+
+  isTracking Boolean @default(false)
+
   order     Order      @relation(fields: [orderId], references: [id])
   financing Financing? @relation(fields: [financingId], references: [id])
 
@@ -367,4 +382,42 @@ enum ShipmentStatus {
   DELIVERED
   CANCELLED
   FAILED
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+
+  buyerId   String
+  sellerId  String
+  productId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyer   User @relation("BuyerConversations", fields: [buyerId], references: [id])
+  seller  User @relation("SellerConversations", fields: [sellerId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  messages Message[]
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([productId])
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+
+  content String
+  isRead  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation("UserMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
 }

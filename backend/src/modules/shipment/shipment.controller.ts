@@ -43,7 +43,9 @@ export const updateStatus = async (req: AuthRequest, res: Response) => {
 
 export const customerShipments = async (req: AuthRequest, res: Response) => {
   try {
-    const shipments = await getCustomerShipments(req.params.customerId as string);
+    const shipments = await getCustomerShipments(
+      req.params.customerId as string,
+    );
     res.json(shipments);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -52,7 +54,9 @@ export const customerShipments = async (req: AuthRequest, res: Response) => {
 
 export const sellerShipments = async (req: AuthRequest, res: Response) => {
   try {
-    const shipments = await getSellerShipments(req.params.sellerId as string);
+    const sellerId = req.user?.id as string;
+
+    const shipments = await getSellerShipments(sellerId);
     res.json(shipments);
   } catch (error: any) {
     res.status(400).json({ message: error.message });

@@ -13,6 +13,8 @@ import { getProductById } from "../../services/product.services";
 import { useAuthStore } from "../../store/auth.store";
 import { useCartStore } from "../../store/cart.store";
 import type { Product } from "../../types/product.types";
+import { MessageCircle } from "lucide-react";
+import { createConversation } from "../../services/chat.service";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -23,6 +25,34 @@ export default function ProductDetailPage() {
   const user = useAuthStore.getState().user;
   const source = (location.state as { source?: string } | null)?.source;
   const canPurchase = Boolean(user) && source !== "public";
+  const handleContactSeller = async () => {
+    if (!product) {
+      toast.error("Producto no encontrado");
+      return;
+    }
+
+    const sellerId = product.seller?.id;
+
+    if (!sellerId) {
+      toast.error("Este producto no tiene vendedor asignado");
+      return;
+    }
+
+    try {
+      const conversation = await createConversation({
+        sellerId,
+        productId: product.id,
+      });
+
+      navigate("/chat", {
+        state: {
+          conversationId: conversation.id,
+        },
+      });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "No se pudo abrir el chat");
+    }
+  };
 
   const panelPath =
     user?.role === "ADMIN"
@@ -99,6 +129,13 @@ export default function ProductDetailPage() {
                 Registrarme
               </button>
             )}
+            <button
+              onClick={handleContactSeller}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 font-black text-emerald-700 hover:bg-emerald-100"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Contactar vendedor
+            </button>
           </div>
         </header>
 
@@ -163,9 +200,7 @@ export default function ProductDetailPage() {
                 )}
 
                 <div className="rounded-xl border border-slate-200 bg-white p-5">
-                  <p className="text-sm font-bold text-slate-500">
-                    Existencia
-                  </p>
+                  <p className="text-sm font-bold text-slate-500">Existencia</p>
 
                   <h4 className="mt-2 text-3xl font-black text-slate-950">
                     {product.stock}

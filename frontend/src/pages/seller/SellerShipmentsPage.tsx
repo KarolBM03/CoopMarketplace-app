@@ -1,6 +1,7 @@
 import { CheckCircle2, PackageCheck, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { socket } from "../../socket";
 import {
   getSellerShipments,
   updateShipmentStatus,
@@ -40,6 +41,10 @@ export default function SellerShipmentsPage() {
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [watchId, setWatchId] = useState<number | null>(null);
+  const [trackingShipmentId, setTrackingShipmentId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     loadShipments();
@@ -50,7 +55,7 @@ export default function SellerShipmentsPage() {
 
     try {
       setLoading(true);
-      const data = await getSellerShipments(user.id);
+      const data = await getSellerShipments();
       setShipments(data);
     } finally {
       setLoading(false);
@@ -70,6 +75,51 @@ export default function SellerShipmentsPage() {
     }
   };
 
+  const startTracking = (shipmentId: string) => {
+    if (!navigator.geolocation) {
+      toast.error("Tu navegador no soporta GPS");
+      return;
+    }
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    socket.emit("shipment:join", shipmentId);
+
+    const id = navigator.geolocation.watchPosition(
+      (position) => {
+        socket.emit("shipment:location:update", {
+          shipmentId,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        toast.error("No se pudo obtener tu ubicación");
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 10000,
+      },
+    );
+
+    setWatchId(id);
+    setTrackingShipmentId(shipmentId);
+    toast.success("Seguimiento GPS iniciado");
+  };
+
+  const stopTracking = () => {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+
+    setWatchId(null);
+    setTrackingShipmentId(null);
+    toast.success("Seguimiento GPS detenido");
+  };
+
   return (
     <div className="px-5 py-8 sm:px-8 lg:px-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -80,9 +130,6 @@ export default function SellerShipmentsPage() {
           <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
             Preparacion y envios
           </h1>
-          <p className="mt-2 text-sm font-medium text-slate-500">
-            Gestiona los productos que ya fueron pagados en CoopHispanica.
-          </p>
         </div>
 
         <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
@@ -106,9 +153,6 @@ export default function SellerShipmentsPage() {
             <h2 className="mt-5 text-xl font-black text-slate-800">
               No hay envios pendientes
             </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Aqui apareceran las ordenes pagadas que debas preparar.
-            </p>
           </div>
         ) : (
           shipments.map((shipment) => {
@@ -139,7 +183,8 @@ export default function SellerShipmentsPage() {
                       Cliente: {shipment.order?.customer?.fullName || "Cliente"}
                     </p>
                     <p className="text-sm text-slate-400">
-                      Orden #{String(shipment.orderId).slice(0, 8).toUpperCase()}
+                      Orden #
+                      {String(shipment.orderId).slice(0, 8).toUpperCase()}
                     </p>
                   </div>
                 </div>
@@ -147,7 +192,8 @@ export default function SellerShipmentsPage() {
                 <div className="flex flex-col gap-3 lg:items-end">
                   <span
                     className={`w-fit rounded-full px-4 py-2 text-xs font-black ring-1 ${
-                      statusClass[shipment.status] || "bg-slate-100 text-slate-600"
+                      statusClass[shipment.status] ||
+                      "bg-slate-100 text-slate-600"
                     }`}
                   >
                     {statusLabel(shipment.status)}
@@ -160,10 +206,29 @@ export default function SellerShipmentsPage() {
                       className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
                     >
                       <PackageCheck className="h-4 w-4" />
-                      {processingId === shipment.id ? "Guardando..." : next.label}
+                      {processingId === shipment.id
+                        ? "Guardando..."
+                        : next.label}
                     </button>
                   )}
                 </div>
+
+                {shipment.status === "IN_TRANSIT" &&
+                  (trackingShipmentId === shipment.id ? (
+                    <button
+                      onClick={stopTracking}
+                      className="rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500"
+                    >
+                      Detener GPS
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => startTracking(shipment.id)}
+                      className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white hover:bg-blue-500"
+                    >
+                      Iniciar GPS
+                    </button>
+                  ))}
               </article>
             );
           })

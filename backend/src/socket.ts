@@ -18,8 +18,31 @@ export const initSocket = (server: any) => {
       console.log(`Usuario ${userId} unido a su room`);
     });
 
+    socket.on("shipment:join", (shipmentId: string) => {
+      socket.join(`shipment:${shipmentId}`);
+    });
+
+    socket.on("shipment:location:update", ({ shipmentId, lat, lng }) => {
+      io.to(`shipment:${shipmentId}`).emit("shipment:location:changed", {
+        shipmentId,
+        lat,
+        lng,
+      });
+    });
+
     socket.on("disconnect", () => {
       console.log("Socket desconectado:", socket.id);
+    });
+
+    socket.on("chat:join", (conversationId: string) => {
+      socket.join(`chat:${conversationId}`);
+    });
+
+    socket.on("chat:typing", ({ conversationId, userId }) => {
+      socket.to(`chat:${conversationId}`).emit("chat:typing", {
+        conversationId,
+        userId,
+      });
     });
   });
 

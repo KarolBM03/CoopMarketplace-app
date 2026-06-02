@@ -7,6 +7,7 @@ import { getSalesBySeller } from "./order.controller";
 import {
   confirmCooperativePayment,
   cooperativePaymentLink,
+  devConfirmPayment,
 } from "./order.controller";
 import { protect } from "../../middlewares/auth.middleware";
 import { authorize } from "../../middlewares/role.middleware";
@@ -24,7 +25,11 @@ router.post(
   authorize("CUSTOMER", "ADMIN"),
   cooperativePaymentLink,
 );
-router.get("/customer/:customerId", allowSelfOrAdmin("customerId"), getCustomerOrders);
+router.get(
+  "/customer/:customerId",
+  allowSelfOrAdmin("customerId"),
+  getCustomerOrders,
+);
 router.get(
   "/seller/:sellerId/sales",
   authorize("SELLER", "ADMIN"),
@@ -33,5 +38,13 @@ router.get(
 );
 router.patch("/:id/status", authorize("ADMIN"), updateStatus);
 router.patch("/:id/cancel", authorize("CUSTOMER", "ADMIN"), cancel);
+// simulador para ver si funciona el envio//
+
+router.post(
+  "/:orderId/dev-confirm-payment",
+  protect,
+  authorize("ADMIN"),
+  devConfirmPayment,
+);
 
 export default router;

@@ -16,6 +16,7 @@ import loanRoutes from "./modules/loan/loan.routes";
 import reportRoutes from "./modules/report/report.routes";
 import queueRoutes from "./modules/queue/queue.routes";
 import shipmentRoutes from "./modules/shipment/shipment.routes";
+import chatRoutes from "./modules/chat/chat.routes";
 
 const app = express();
 
@@ -38,7 +39,7 @@ app.use("/api/loans", loanRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/queues", queueRoutes);
 app.use("/api/shipments", shipmentRoutes);
-
+app.use("/api/chat", chatRoutes);
 app.get("/", (_req, res) => {
   res.send("Marketplace API Corriendo");
 });

@@ -21,21 +21,8 @@ router.get(
   allowSelfOrAdmin("customerId"),
   customerShipments,
 );
-router.get(
-  "/seller/:sellerId",
-  authorize("SELLER", "ADMIN"),
-  allowSelfOrAdmin("sellerId"),
-  sellerShipments,
-);
-router.post(
-  "/order/:orderId",
-  authorize("SELLER", "ADMIN"),
-  createShipment,
-);
-router.patch(
-  "/:shipmentId/status",
-  authorize("SELLER", "ADMIN"),
-  updateStatus,
-);
+router.get("/seller/me", authorize("SELLER", "ADMIN"), sellerShipments);
+router.post("/order/:orderId", authorize("SELLER", "ADMIN"), createShipment);
+router.patch("/:shipmentId/status", authorize("SELLER", "ADMIN"), updateStatus);
 
 export default router;

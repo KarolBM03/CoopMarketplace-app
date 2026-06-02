@@ -92,7 +92,7 @@ export const getProducts = async (
           ? { salesCount: "desc" as const }
           : sort === "relevance"
             ? { rankingScore: "desc" as const }
-        : { createdAt: "desc" as const };
+            : { createdAt: "desc" as const };
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({
@@ -208,17 +208,35 @@ export const deleteProduct = async (productId: string, actor?: any) => {
 export const getProductById = async (productId: string) => {
   const product = await prisma.product.findUnique({
     where: { id: productId },
+    include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          storeName: true,
+        },
+      },
+    },
   });
 
   if (!product || !product.isActive) {
     throw new Error("Producto no encontrado");
   }
 
-  return prisma.product.update({
+  return await prisma.product.update({
     where: { id: productId },
     data: {
       views: { increment: 1 },
       rankingScore: { increment: 0.25 },
+    },
+    include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          storeName: true,
+        },
+      },
     },
   });
 };

@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   Truck,
   Wallet,
+  MessageCircle,
 } from "lucide-react";
 import { useEffect } from "react";
 import { socket } from "../../socket";
@@ -20,6 +21,7 @@ const navItems = [
   { to: "/seller/products", label: "Productos", icon: Package },
   { to: "/seller/sales", label: "Ventas", icon: ShoppingBag },
   { to: "/seller/wallet", label: "Billetera", icon: Wallet },
+  { to: "/chat", label: "Chat", path: "/chat", icon: MessageCircle },
   {
     to: "/seller/shipments",
     label: "Envios",

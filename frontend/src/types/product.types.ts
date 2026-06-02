@@ -8,4 +8,10 @@ export interface Product {
   isFinanced: boolean;
   isActive?: boolean;
   category: string;
+
+  seller?: {
+    id: string;
+    fullName?: string;
+    storeName?: string;
+  };
 }

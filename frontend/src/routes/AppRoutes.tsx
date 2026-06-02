@@ -29,6 +29,9 @@ import SellerShipmentsPage from "../pages/seller/SellerShipmentsPage";
 import AdminFinancingsPage from "../pages/admin/AdminFinancingsPage";
 import AdminReportsPage from "../pages/admin/AdminReportsPage";
 import VerifyOTPPage from "../pages/auth/VerifyOTPPage";
+import CustomerShipmentsPage from "../pages/customer/CustomerShipments";
+import ChatPage from "../pages/chat/ChatPage";
+import AdminChatAuditPage from "../pages/admin/AdminChatPage";
 
 export default function AppRoutes() {
   return (
@@ -50,6 +53,7 @@ export default function AppRoutes() {
           <Route path="sellers" element={<AdminSellersPage />} />
           <Route path="financings" element={<AdminFinancingsPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
+          <Route path="/admin/chats" element={<AdminChatAuditPage />} />
         </Route>
         <Route
           path="/seller"
@@ -81,6 +85,10 @@ export default function AppRoutes() {
           <Route path="financing" element={<CustomerFinancingPage />} />
           <Route path="wallet" element={<CustomerWalletPage />} />
           <Route path="notifications" element={<CustomerNotificationsPage />} />
+          <Route
+            path="/customer/shipments"
+            element={<CustomerShipmentsPage />}
+          />
         </Route>
 
         <Route
@@ -97,6 +105,7 @@ export default function AppRoutes() {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/chat" element={<ChatPage />} />
       </Routes>
     </BrowserRouter>
   );

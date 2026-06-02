@@ -7,7 +7,9 @@ import {
   ReceiptText,
   ShoppingCart,
   Store,
+  Truck,
   Wallet,
+  MessageCircle,
 } from "lucide-react";
 import { socket } from "../../socket";
 import { useEffect, useState } from "react";
@@ -22,7 +24,9 @@ const navItems = [
   { to: "/customer/orders", label: "Mis Pedidos", icon: ReceiptText },
   { to: "/customer/financing", label: "Financiamientos", icon: CreditCard },
   { to: "/customer/wallet", label: "Billetera", icon: Wallet },
+  { to: "/customer/shipments", label: "Mis Envios", icon: Truck },
   { to: "/customer/notifications", label: "Notificaciones", icon: Bell },
+  { to: "/chat", label: "Chat", path: "/chat", icon: MessageCircle },
 ];
 
 const getCartCount = () =>

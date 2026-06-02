@@ -9,8 +9,8 @@ export type ShipmentStatus =
   | "CANCELLED"
   | "FAILED";
 
-export const getSellerShipments = async (sellerId: string) => {
-  const response = await api.get(`/shipments/seller/${sellerId}`);
+export const getSellerShipments = async () => {
+  const response = await api.get("/shipments/seller/me");
   return response.data;
 };
 
