@@ -1,5 +1,6 @@
 import prisma from "../../config/prisma";
 import { validateMessageContent } from "./chat.validation";
+import { sendPushToUser } from "../../services/pushNotification.service";
 
 export const getOrCreateConversation = async ({
   buyerId,
@@ -146,6 +147,24 @@ export const sendMessage = async ({
       },
     },
   });
+
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { updatedAt: new Date() },
+  });
+
+  const receiverId =
+    conversation.buyerId === senderId
+      ? conversation.sellerId
+      : conversation.buyerId;
+
+  await sendPushToUser({
+    userId: receiverId,
+    title: "Nuevo mensaje",
+    body: content.trim(),
+  });
+
+  return message;
 
   await prisma.conversation.update({
     where: { id: conversationId },

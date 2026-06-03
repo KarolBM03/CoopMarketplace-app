@@ -44,6 +44,13 @@ export const initSocket = (server: any) => {
         userId,
       });
     });
+
+    socket.on("chat:stop_typing", ({ conversationId, userId }) => {
+      socket.to(`chat:${conversationId}`).emit("chat:stop_typing", {
+        conversationId,
+        userId,
+      });
+    });
   });
 
   return io;

@@ -17,6 +17,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
 import { useCartStore } from "../../store/cart.store";
 import toast from "react-hot-toast";
+import { requestNotificationPermission } from "../../firebase/requestNotificationPermission";
 
 const navItems = [
   { to: "/customer", label: "Dashboard", icon: Home, end: true },
@@ -57,6 +58,8 @@ export default function CustomerLayout() {
 
   useEffect(() => {
     if (!user) return;
+
+    requestNotificationPermission();
 
     socket.connect();
     socket.emit("join", user.id);

@@ -19,6 +19,7 @@ export default function ChatPage() {
   const [selected, setSelected] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [content, setContent] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const location = useLocation();
   const conversationIdFromState = location.state?.conversationId;
 
@@ -45,12 +46,32 @@ export default function ChatPage() {
         if (exists) return prev;
         return [...prev, message];
       });
+
+      if (message.senderId !== currentUserId) {
+        toast.success("Nuevo mensaje recibido");
+      }
     };
 
+    const handleTyping = ({ conversationId }: any) => {
+      if (conversationId === selected.id) {
+        setIsTyping(true);
+      }
+    };
+
+    const handleStopTyping = ({ conversationId }: any) => {
+      if (conversationId === selected.id) {
+        setIsTyping(false);
+      }
+    };
+
+    socket.on("chat:typing", handleTyping);
+    socket.on("chat:stop_typing", handleStopTyping);
     socket.on("chat:message:new", handleNewMessage);
 
     return () => {
       socket.off("chat:message:new", handleNewMessage);
+      socket.off("chat:typing", handleTyping);
+      socket.off("chat:stop_typing", handleStopTyping);
     };
   }, [selected]);
 
@@ -148,19 +169,33 @@ export default function ChatPage() {
               <p className="text-sm text-slate-500">
                 Conversación de CoopMarket
               </p>
+              {isTyping && (
+                <p className="mt-1 text-xs font-semibold text-emerald-600">
+                  Escribiendo...
+                </p>
+              )}
+            </div>
+            <div className="border-b p-6">
+              <h2 className="text-3xl font-bold">{selected?.product?.name}</h2>
+
+              {user?.role === "ADMIN" && (
+                <div className="mt-2 text-sm text-slate-500">
+                  Cliente: {selected?.buyer?.fullName}
+                  {" • "}
+                  Vendedor: {selected?.seller?.fullName}
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto bg-slate-100 px-6 py-5">
               <div className="mx-auto flex max-w-4xl flex-col gap-3">
                 {messages.map((message) => {
-                  console.log({
-                    currentUserId,
-                    senderId: message.senderId,
-                    senderObjectId: message.sender?.id,
-                    content: message.content,
-                  });
                   const senderId = message.senderId ?? message.sender?.id;
-                  const isMine = String(senderId) === String(currentUserId);
+
+                  const isMine =
+                    user?.role === "ADMIN"
+                      ? senderId === selected?.sellerId
+                      : String(senderId) === String(currentUserId);
 
                   return (
                     <div
@@ -176,6 +211,11 @@ export default function ChatPage() {
                             : "rounded-bl-md border border-slate-200 bg-white text-slate-800"
                         }`}
                       >
+                        {user?.role === "ADMIN" && (
+                          <div className="mb-1 text-xs font-semibold text-slate-500">
+                            {message.sender?.fullName}
+                          </div>
+                        )}
                         <p className="break-words text-sm font-semibold">
                           {message.content}
                         </p>
@@ -201,7 +241,23 @@ export default function ChatPage() {
               <div className="flex gap-3 border-t border-slate-200 p-4">
                 <input
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
+                  onChange={(e) => {
+                    setContent(e.target.value);
+
+                    if (selected) {
+                      socket.emit("chat:typing", {
+                        conversationId: selected.id,
+                        userId: currentUserId,
+                      });
+
+                      setTimeout(() => {
+                        socket.emit("chat:stop_typing", {
+                          conversationId: selected.id,
+                          userId: currentUserId,
+                        });
+                      }, 1200);
+                    }
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSend();
                   }}

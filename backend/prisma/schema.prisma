@@ -57,6 +57,7 @@ model User {
   buyerConversations  Conversation[] @relation("BuyerConversations")
   sellerConversations Conversation[] @relation("SellerConversations")
   messages            Message[]      @relation("UserMessages")
+  pushTokens PushToken[]
 }
 
 model Product {
@@ -420,4 +421,15 @@ model Message {
 
   @@index([conversationId])
   @@index([senderId])
+}
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  platform  String   @default("WEB")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

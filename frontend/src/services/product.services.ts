@@ -43,8 +43,8 @@ export const createProduct = async (data: {
   return response.data;
 };
 
-export const getSellerProducts = async (sellerId: string) => {
-  const response = await api.get(`/products/seller/${sellerId}`);
+export const getSellerProducts = async () => {
+  const response = await api.get(`/products/seller/my-products`);
   return response.data;
 };
 

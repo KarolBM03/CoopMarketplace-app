@@ -4,7 +4,6 @@ import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import authRoutes from "./modules/auth/auth.routes";
-import productRoutes from "./modules/product/product.routes";
 import financingRoutes from "./modules/financing/financing.routes";
 import orderRoutes from "./modules/order/order.routes";
 import walletRoutes from "./modules/wallet/wallet.routes";
@@ -17,6 +16,8 @@ import reportRoutes from "./modules/report/report.routes";
 import queueRoutes from "./modules/queue/queue.routes";
 import shipmentRoutes from "./modules/shipment/shipment.routes";
 import chatRoutes from "./modules/chat/chat.routes";
+import pushRoutes from "./modules/push/push.routes";
+import onionProductRoutes from "./presentation/http/routes/product.routes";
 
 const app = express();
 
@@ -27,7 +28,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
+app.use("/api/products", onionProductRoutes);
 app.use("/api/financing", financingRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/wallets", walletRoutes);
@@ -40,6 +41,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/queues", queueRoutes);
 app.use("/api/shipments", shipmentRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/push", pushRoutes);
 app.get("/", (_req, res) => {
   res.send("Marketplace API Corriendo");
 });

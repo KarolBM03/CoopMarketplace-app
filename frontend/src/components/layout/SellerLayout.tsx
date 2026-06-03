@@ -15,6 +15,7 @@ import { socket } from "../../socket";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
 import toast from "react-hot-toast";
+import { requestNotificationPermission } from "../../firebase/requestNotificationPermission";
 
 const navItems = [
   { to: "/seller", label: "Dashboard", icon: Home, end: true },
@@ -48,6 +49,8 @@ export default function SellerLayout() {
 
   useEffect(() => {
     if (!user) return;
+
+    requestNotificationPermission();
 
     socket.connect();
     socket.emit("join", user.id);

@@ -22,7 +22,8 @@ export const validateMessageContent = (content: string) => {
 
   const manyDigitsRegex = /\d{1,}/;
   const numberWordsRegex =
-    /(cero|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve)/gi;
+    /\b(mil|ciento[s]?|cien|cero|un[o|a]s?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|trece|catorce|quince|dieci(séis|siete|ocho|nueve)|veinte|veinti(uno|dós|trés|cuatro|cinco|séis|siete|ocho|nueve)|((dosciento|tresciento|cuatrociento|quiniento|seisciento|seteciento|ochociento|noveciento)s?|(treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa))( y (uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve))?)\b/i;
+
   if (numberWordsRegex.test(message)) {
     throw new Error("No esta permitido compartir informacion de contacto");
   }

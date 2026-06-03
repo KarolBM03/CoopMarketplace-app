@@ -32,7 +32,7 @@ export default function SellerDashboard() {
     const [walletData, productData, salesData, notificationData] =
       await Promise.all([
         getWalletByUser(user.id),
-        getSellerProducts(user.id),
+        getSellerProducts(),
         getSellerSales(user.id),
         getNotificationsByUser(user.id),
       ]);
@@ -62,8 +62,7 @@ export default function SellerDashboard() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 sm:text-base">
-              Revisa tus productos, ventas y notificaciones desde un solo
-              lugar.
+              Revisa tus productos, ventas y notificaciones desde un solo lugar.
             </p>
           </div>
         </div>
@@ -168,8 +167,8 @@ export default function SellerDashboard() {
             <h2 className="mt-6 text-2xl font-black">Resumen de actividad</h2>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              Accesos rapidos para gestionar tu tienda y revisar los
-              movimientos recientes.
+              Accesos rapidos para gestionar tu tienda y revisar los movimientos
+              recientes.
             </p>
           </div>
 
