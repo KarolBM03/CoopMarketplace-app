@@ -31,7 +31,7 @@ export default function CustomerShipmentsPage() {
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState<
-    Record<string, { lat: number; lng: number }>
+    Record<string, { lat: number; lng: number; lastLocationAt?: string }>
   >({});
 
   useEffect(() => {
@@ -39,30 +39,68 @@ export default function CustomerShipmentsPage() {
   }, []);
 
   useEffect(() => {
-    if (!shipments.length) return;
+    if (!shipments.length || !user) return;
 
     if (!socket.connected) {
       socket.connect();
     }
 
+    const initialLocations = shipments.reduce(
+      (acc, shipment) => {
+        if (
+          shipment.currentLatitude !== null &&
+          shipment.currentLatitude !== undefined &&
+          shipment.currentLongitude !== null &&
+          shipment.currentLongitude !== undefined
+        ) {
+          acc[shipment.id] = {
+            lat: Number(shipment.currentLatitude),
+            lng: Number(shipment.currentLongitude),
+            lastLocationAt: shipment.lastLocationAt,
+          };
+        }
+
+        return acc;
+      },
+      {} as Record<string, { lat: number; lng: number; lastLocationAt?: string }>,
+    );
+
+    setLocations((prev) => ({
+      ...initialLocations,
+      ...prev,
+    }));
+
     shipments.forEach((shipment) => {
-      socket.emit("shipment:join", shipment.id);
+      socket.emit("shipment:join", {
+        shipmentId: shipment.id,
+        userId: user.id,
+        role: user.role,
+      });
     });
 
-    socket.on("shipment:location:changed", (data) => {
+    const handleLocationChanged = (data: any) => {
       setLocations((prev) => ({
         ...prev,
         [data.shipmentId]: {
-          lat: data.lat,
-          lng: data.lng,
+          lat: Number(data.lat),
+          lng: Number(data.lng),
+          lastLocationAt: data.lastLocationAt,
         },
       }));
-    });
+    };
+
+    const handleShipmentError = (data: any) => {
+      console.warn(data.message);
+    };
+
+    socket.on("shipment:location:changed", handleLocationChanged);
+    socket.on("shipment:error", handleShipmentError);
 
     return () => {
-      socket.off("shipment:location:changed");
+      socket.off("shipment:location:changed", handleLocationChanged);
+      socket.off("shipment:error", handleShipmentError);
     };
-  }, [shipments]);
+  }, [shipments, user]);
 
   const loadShipments = async () => {
     if (!user) return;
@@ -180,12 +218,21 @@ export default function CustomerShipmentsPage() {
                   })}
                 </div>
 
-                {locations[shipment.id] && (
-                  <ShipmentMap
-                    lat={locations[shipment.id].lat}
-                    lng={locations[shipment.id].lng}
-                  />
-                )}
+                {locations[shipment.id] ? (
+                  <>
+                    <ShipmentMap
+                      lat={locations[shipment.id].lat}
+                      lng={locations[shipment.id].lng}
+                    />
+                    <p className="mt-2 text-xs font-semibold text-slate-500">
+                      Ubicacion actualizada en tiempo real
+                    </p>
+                  </>
+                ) : shipment.status === "IN_TRANSIT" ? (
+                  <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-bold text-slate-500">
+                    Esperando que el vendedor inicie el GPS.
+                  </div>
+                ) : null}
               </article>
             );
           })

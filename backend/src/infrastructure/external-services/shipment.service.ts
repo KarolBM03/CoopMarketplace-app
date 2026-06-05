@@ -5,7 +5,11 @@ import { createNotification } from "../external-services/notification.service";
 
 const canShipOrder = (status: OrderStatus) =>
   (
-    [OrderStatus.PAID, OrderStatus.PREPARING, OrderStatus.SHIPPED] as OrderStatus[]
+    [
+      OrderStatus.PAID,
+      OrderStatus.PREPARING,
+      OrderStatus.SHIPPED,
+    ] as OrderStatus[]
   ).includes(status);
 
 export const createShipmentForOrder = async ({
@@ -187,7 +191,10 @@ export const updateShipmentStatus = async ({
     data.preparedAt = now;
   }
 
-  if (status === ShipmentStatus.SHIPPED || status === ShipmentStatus.IN_TRANSIT) {
+  if (
+    status === ShipmentStatus.SHIPPED ||
+    status === ShipmentStatus.IN_TRANSIT
+  ) {
     data.shippedAt = now;
     data.isTracking = status === ShipmentStatus.IN_TRANSIT;
     if (status === ShipmentStatus.IN_TRANSIT && !shipment.trackingStartedAt) {
@@ -196,6 +203,16 @@ export const updateShipmentStatus = async ({
   }
 
   if (status === ShipmentStatus.DELIVERED) {
+    const proof = await prisma.shipmentProof.findUnique({
+      where: {
+        shipmentId,
+      },
+    });
+
+    if (!proof) {
+      throw new Error("Primero tienes que subir la foto de entrega");
+    }
+
     data.deliveredAt = now;
     data.isTracking = false;
     data.trackingEndedAt = now;
@@ -211,7 +228,10 @@ export const updateShipmentStatus = async ({
       where: { id: shipment.orderId },
       data: { status: OrderStatus.DELIVERED },
     });
-  } else if (status === ShipmentStatus.SHIPPED || status === ShipmentStatus.IN_TRANSIT) {
+  } else if (
+    status === ShipmentStatus.SHIPPED ||
+    status === ShipmentStatus.IN_TRANSIT
+  ) {
     await prisma.order.update({
       where: { id: shipment.orderId },
       data: { status: OrderStatus.SHIPPED },
@@ -252,7 +272,11 @@ export const getCustomerShipments = async (customerId: string) => {
 export const getSellerShipments = async (sellerId: string) => {
   return prisma.shipment.findMany({
     where: { sellerId },
-    include: { order: { include: { customer: true, items: { include: { product: true } } } } },
+    include: {
+      order: {
+        include: { customer: true, items: { include: { product: true } } },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
 };
@@ -264,8 +288,11 @@ export const getAdminShipments = async () => {
   });
 };
 
-const canManageShipmentTracking = (shipment: { sellerId: string }, actorId?: string, actorRole?: string) =>
-  actorRole === "ADMIN" || shipment.sellerId === actorId;
+const canManageShipmentTracking = (
+  shipment: { sellerId: string },
+  actorId?: string,
+  actorRole?: string,
+) => actorRole === "ADMIN" || shipment.sellerId === actorId;
 
 export const startShipmentTracking = async ({
   shipmentId,
@@ -276,7 +303,9 @@ export const startShipmentTracking = async ({
   actorId?: string;
   actorRole?: string;
 }) => {
-  const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
+  const shipment = await prisma.shipment.findUnique({
+    where: { id: shipmentId },
+  });
 
   if (!shipment) throw new Error("Envio no encontrado");
   if (!canManageShipmentTracking(shipment, actorId, actorRole)) {
@@ -306,7 +335,9 @@ export const updateShipmentLocation = async ({
   actorId?: string;
   actorRole?: string;
 }) => {
-  const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
+  const shipment = await prisma.shipment.findUnique({
+    where: { id: shipmentId },
+  });
 
   if (!shipment) throw new Error("Envio no encontrado");
   if (!canManageShipmentTracking(shipment, actorId, actorRole)) {
@@ -333,7 +364,9 @@ export const stopShipmentTracking = async ({
   actorId?: string;
   actorRole?: string;
 }) => {
-  const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
+  const shipment = await prisma.shipment.findUnique({
+    where: { id: shipmentId },
+  });
 
   if (!shipment) throw new Error("Envio no encontrado");
   if (!canManageShipmentTracking(shipment, actorId, actorRole)) {
@@ -348,6 +381,3 @@ export const stopShipmentTracking = async ({
     },
   });
 };
-
-
-

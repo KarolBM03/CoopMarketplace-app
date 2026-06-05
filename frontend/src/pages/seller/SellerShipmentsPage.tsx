@@ -76,6 +76,8 @@ export default function SellerShipmentsPage() {
   };
 
   const startTracking = (shipmentId: string) => {
+    if (!user) return;
+
     if (!navigator.geolocation) {
       toast.error("Tu navegador no soporta GPS");
       return;
@@ -85,7 +87,17 @@ export default function SellerShipmentsPage() {
       socket.connect();
     }
 
-    socket.emit("shipment:join", shipmentId);
+    socket.emit("shipment:join", {
+      shipmentId,
+      userId: user.id,
+      role: user.role,
+    });
+
+    socket.emit("shipment:start", {
+      shipmentId,
+      userId: user.id,
+      role: user.role,
+    });
 
     const id = navigator.geolocation.watchPosition(
       (position) => {
@@ -93,6 +105,8 @@ export default function SellerShipmentsPage() {
           shipmentId,
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          userId: user.id,
+          role: user.role,
         });
       },
       () => {
@@ -111,6 +125,14 @@ export default function SellerShipmentsPage() {
   };
 
   const stopTracking = () => {
+    if (trackingShipmentId && user) {
+      socket.emit("shipment:stop", {
+        shipmentId: trackingShipmentId,
+        userId: user.id,
+        role: user.role,
+      });
+    }
+
     if (watchId !== null) {
       navigator.geolocation.clearWatch(watchId);
     }

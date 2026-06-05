@@ -3,6 +3,7 @@ import { protect } from "../middlewares/auth.middleware";
 import { authorize } from "../middlewares/role.middleware";
 import { allowSelfOrAdmin } from "../middlewares/ownership.middleware";
 import { ShipmentControllerV2 } from "../controllers/shipment/ShipmentControllerV2";
+import { submitShipmentProofController } from "../controllers/shipment/ShipmentProofController";
 
 const router = Router();
 const controller = new ShipmentControllerV2();
@@ -44,6 +45,12 @@ router.patch(
   "/:shipmentId/tracking/stop",
   authorize("SELLER", "ADMIN"),
   controller.stopTracking,
+);
+router.post(
+  "/:shipmentId/proof",
+  protect,
+  authorize("SELLER", "ADMIN"),
+  submitShipmentProofController,
 );
 
 export default router;
