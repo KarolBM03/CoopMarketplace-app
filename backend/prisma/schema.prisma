@@ -381,12 +381,17 @@ model ShipmentProof {
   id String @id @default(uuid())
 
   shipmentId String @unique
-  photoUrl String
+
+ customerPhotoUrl String?
+ productPhotoUrl  String?
+
   latitude Float?
   longitude Float?
+
   notes String?
 
   deliveredById String
+
   deliveredAt DateTime @default(now())
 
   createdAt DateTime @default(now())

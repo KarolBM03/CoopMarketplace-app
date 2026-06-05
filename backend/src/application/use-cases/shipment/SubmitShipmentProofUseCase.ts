@@ -7,7 +7,8 @@ export class SubmitShipmentProofUseCase {
   async execute(data: {
     shipmentId: string;
     deliveredById: string;
-    photoUrl: string;
+    customerPhotoUrl: string;
+    productPhotoUrl: string;
     latitude?: number;
     longitude?: number;
     notes?: string;
@@ -18,14 +19,25 @@ export class SubmitShipmentProofUseCase {
       throw new Error("Debes seleccionar un envío");
     }
 
-    if (!data.photoUrl?.trim()) {
+    if (!data.customerPhotoUrl?.trim()) {
       await fraudAlert.execute({
         shipmentId: data.shipmentId,
         userId: data.deliveredById,
-        reason: "Intentaron confirmar una entrega sin foto",
+        reason:
+          "Intentaron confirmar entrega sin foto del cliente con el producto",
       });
 
-      throw new Error("Tienes que subir una foto para confirmar la entrega");
+      throw new Error("Debes subir una foto del cliente con el producto");
+    }
+
+    if (!data.productPhotoUrl?.trim()) {
+      await fraudAlert.execute({
+        shipmentId: data.shipmentId,
+        userId: data.deliveredById,
+        reason: "Intentaron confirmar entrega sin foto del producto",
+      });
+
+      throw new Error("Debes subir una foto del producto");
     }
 
     if (data.latitude === undefined || data.longitude === undefined) {
@@ -94,7 +106,8 @@ export class SubmitShipmentProofUseCase {
     const proof = await prisma.shipmentProof.create({
       data: {
         shipmentId: data.shipmentId,
-        photoUrl: data.photoUrl.trim(),
+        customerPhotoUrl: data.customerPhotoUrl.trim(),
+        productPhotoUrl: data.productPhotoUrl.trim(),
         latitude: data.latitude,
         longitude: data.longitude,
         notes: data.notes?.trim(),
@@ -139,7 +152,8 @@ export class SubmitShipmentProofUseCase {
       description: "Se guardó la evidencia de entrega",
       metadata: {
         shipmentId: shipment.id,
-        photoUrl: data.photoUrl.trim(),
+        customerPhotoUrl: data.customerPhotoUrl.trim(),
+        productPhotoUrl: data.productPhotoUrl.trim(),
         latitude: data.latitude,
         longitude: data.longitude,
         notes: data.notes?.trim(),

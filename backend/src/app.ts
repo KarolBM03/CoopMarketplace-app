@@ -20,6 +20,7 @@ import onionAdminRoutes from "./presentation/http/routes/admin.routes";
 import onionWalletRoutes from "./presentation/http/routes/wallet.routes";
 import onionTransactionRoutes from "./presentation/http/routes/transaction.routes";
 import onionReportRoutes from "./presentation/http/routes/report.routes";
+import { setupSwaggerDocs } from "./infrastructure/docs/swagger";
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+setupSwaggerDocs(app);
 app.use("/api/auth", onionAuthRoutes);
 app.use("/api/products", onionProductRoutes);
 app.use("/api/financing", onionFinancingRoutes);
