@@ -12,7 +12,10 @@ export class GetProductByIdUseCase {
 
     await this.productRepository.update(productId, {
       views: product.views + 1,
-      rankingScore: Number(product.rankingScore) + 0.25,
+      rankingScore:
+        product.salesCount * 3 +
+        (product.views + 1) * 0.25 +
+        (product.isFinanced ? 2 : 0),
     });
 
     return await this.productRepository.findById(productId);

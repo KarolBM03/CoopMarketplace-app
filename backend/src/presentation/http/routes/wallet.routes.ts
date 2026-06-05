@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { WalletControllerV2 } from "../../controllers/wallet/WalletControllerV2";
-import { protect } from "../../middlewares/auth.middleware";
-import { allowSelfOrAdmin } from "../../middlewares/ownership.middleware";
+import { WalletControllerV2 } from "../controllers/wallet/WalletControllerV2";
+import { protect } from "../middlewares/auth.middleware";
+import { allowSelfOrAdmin } from "../middlewares/ownership.middleware";
 
 const router = Router();
 const controller = new WalletControllerV2();

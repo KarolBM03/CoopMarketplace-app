@@ -33,7 +33,7 @@ export default function SellerDashboard() {
       await Promise.all([
         getWalletByUser(user.id),
         getSellerProducts(),
-        getSellerSales(user.id),
+        getSellerSales(),
         getNotificationsByUser(user.id),
       ]);
 

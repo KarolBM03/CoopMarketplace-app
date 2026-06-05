@@ -47,7 +47,7 @@ export default function SellerProductsPage() {
 
   const loadProducts = async () => {
     if (!user) return;
-    const data = await getSellerProducts(user.id);
+    const data = await getSellerProducts();
     setProducts(data);
   };
 

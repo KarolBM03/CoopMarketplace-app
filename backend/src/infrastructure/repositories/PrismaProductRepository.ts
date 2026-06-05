@@ -3,6 +3,12 @@ import { ProductRepository } from "../../domain/repositories/ProductRepository";
 import { Product } from "../../domain/entities/Product";
 
 export class PrismaProductRepository implements ProductRepository {
+  private readonly sellerSummary = {
+    id: true,
+    fullName: true,
+    storeName: true,
+  };
+
   async create(data: Partial<Product>): Promise<Product> {
     return await prisma.product.create({
       data: {
@@ -16,12 +22,22 @@ export class PrismaProductRepository implements ProductRepository {
         currency: data.currency || "DOP",
         isFinanced: true,
       },
+      include: {
+        seller: {
+          select: this.sellerSummary,
+        },
+      },
     });
   }
 
   async findById(id: string): Promise<Product | null> {
     return await prisma.product.findUnique({
       where: { id },
+      include: {
+        seller: {
+          select: this.sellerSummary,
+        },
+      },
     });
   }
 
@@ -35,6 +51,11 @@ export class PrismaProductRepository implements ProductRepository {
         skip,
         take: limit,
         orderBy,
+        include: {
+          seller: {
+            select: this.sellerSummary,
+          },
+        },
       }),
       prisma.product.count({ where }),
     ]);
@@ -43,9 +64,22 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   async update(id: string, data: Partial<Product>): Promise<Product> {
+    const {
+      id: _id,
+      seller,
+      createdAt,
+      updatedAt,
+      ...updateData
+    } = data;
+
     return await prisma.product.update({
       where: { id },
-      data,
+      data: updateData as any,
+      include: {
+        seller: {
+          select: this.sellerSummary,
+        },
+      },
     });
   }
 
@@ -54,6 +88,11 @@ export class PrismaProductRepository implements ProductRepository {
       where: { id },
       data: {
         isActive: false,
+      },
+      include: {
+        seller: {
+          select: this.sellerSummary,
+        },
       },
     });
   }
@@ -66,6 +105,11 @@ export class PrismaProductRepository implements ProductRepository {
       },
       orderBy: {
         createdAt: "desc",
+      },
+      include: {
+        seller: {
+          select: this.sellerSummary,
+        },
       },
     });
   }

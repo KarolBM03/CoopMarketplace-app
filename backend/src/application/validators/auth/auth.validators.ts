@@ -9,6 +9,14 @@ export const registerUserSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   phone: z.string().trim().optional(),
+  role: z.enum(["CUSTOMER", "SELLER", "ADMIN"]).optional(),
+  acceptedTerms: z.boolean().optional(),
+  storeName: z.string().trim().optional(),
+  mainCategory: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  documentId: z.string().trim().optional(),
+  bankAccount: z.string().trim().optional(),
+  identityImageUrl: z.string().trim().optional(),
 });
 
 export const loginUserSchema = z.object({
@@ -36,6 +44,7 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
+  token: z.string().trim().optional(),
   password: passwordSchema,
 });
 

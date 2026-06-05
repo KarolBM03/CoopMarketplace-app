@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { protect } from "../../middlewares/auth.middleware";
-import { authorize } from "../../middlewares/role.middleware";
-import { AdminControllerV2 } from "../../controllers/admin/AdminControllerV2";
+import { protect } from "../middlewares/auth.middleware";
+import { authorize } from "../middlewares/role.middleware";
+import { AdminControllerV2 } from "../controllers/admin/AdminControllerV2";
 
 const router = Router();
 const controller = new AdminControllerV2();
@@ -19,6 +19,3 @@ router.patch("/sellers/:userId/reject", controller.rejectSeller);
 router.get("/sellers", controller.sellers);
 
 export default router;
-
-
-

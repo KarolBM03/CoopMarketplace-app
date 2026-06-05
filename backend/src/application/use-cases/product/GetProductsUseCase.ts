@@ -38,14 +38,24 @@ export class GetProductsUseCase {
 
     const orderBy =
       sort === "price_asc"
-        ? { price: "asc" as const }
+        ? [{ price: "asc" as const }]
         : sort === "price_desc"
-          ? { price: "desc" as const }
+          ? [{ price: "desc" as const }]
           : sort === "best_selling"
-            ? { salesCount: "desc" as const }
-            : sort === "relevance" || sort === "trending"
-              ? { rankingScore: "desc" as const }
-              : { createdAt: "desc" as const };
+            ? [{ salesCount: "desc" as const }, { rankingScore: "desc" as const }]
+            : sort === "most_viewed"
+              ? [{ views: "desc" as const }, { rankingScore: "desc" as const }]
+              : sort === "financed"
+                ? [{ isFinanced: "desc" as const }, { rankingScore: "desc" as const }]
+                : sort === "relevance" || sort === "trending" || sort === "recommended"
+                  ? [
+                      { rankingScore: "desc" as const },
+                      { salesCount: "desc" as const },
+                      { views: "desc" as const },
+                      { isFinanced: "desc" as const },
+                      { createdAt: "desc" as const },
+                    ]
+                  : [{ createdAt: "desc" as const }];
 
     const result = await this.productRepository.findMany({
       page,

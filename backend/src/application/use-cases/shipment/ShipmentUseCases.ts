@@ -40,5 +40,29 @@ export class GetAdminShipmentsUseCase {
   }
 }
 
+export class StartShipmentTrackingUseCase {
+  constructor(private readonly shipmentRepository: ShipmentRepository) {}
+
+  execute(data: any) {
+    return this.shipmentRepository.startTracking(data);
+  }
+}
+
+export class UpdateShipmentLocationUseCase {
+  constructor(private readonly shipmentRepository: ShipmentRepository) {}
+
+  execute(data: any) {
+    return this.shipmentRepository.updateLocation(data);
+  }
+}
+
+export class StopShipmentTrackingUseCase {
+  constructor(private readonly shipmentRepository: ShipmentRepository) {}
+
+  execute(data: any) {
+    return this.shipmentRepository.stopTracking(data);
+  }
+}
+
 
 

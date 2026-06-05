@@ -9,7 +9,8 @@ export class LoginUserUseCase {
   constructor(private userRepository: UserRepository) {}
 
   async execute(data: LoginUserDTO) {
-    const user = await this.userRepository.findByEmail(data.email);
+    const email = data.email.trim().toLowerCase();
+    const user = await this.userRepository.findByEmail(email);
 
     if (!user) {
       throw new Error("Sus credenciales son inválidas");

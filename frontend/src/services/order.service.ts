@@ -19,8 +19,12 @@ export const getCustomerOrders = async (customerId: string) => {
   return response.data;
 };
 
-export const getSellerSales = async (sellerId: string) => {
-  const response = await api.get(`/orders/seller/${sellerId}/sales`);
+export const getSellerSales = async (sellerId?: string) => {
+  const path = sellerId
+    ? `/orders/seller/${sellerId}/sales`
+    : "/orders/seller/me/sales";
+
+  const response = await api.get(path);
   return response.data;
 };
 

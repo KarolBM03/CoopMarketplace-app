@@ -25,14 +25,20 @@ interface RegisterData {
 export type OTPChannel = "email" | "sms" | "whatsapp";
 
 export const loginUser = async (data: LoginData): Promise<AuthResponse> => {
-  const response = await api.post("/auth/login", data);
+  const response = await api.post("/auth/login", {
+    ...data,
+    email: data.email.trim().toLowerCase(),
+  });
   return response.data;
 };
 
 export const registerUser = async (
   data: RegisterData,
 ): Promise<AuthResponse> => {
-  const response = await api.post("/auth/register", data);
+  const response = await api.post("/auth/register", {
+    ...data,
+    email: data.email.trim().toLowerCase(),
+  });
   return response.data;
 };
 export const getMe = async () => {
@@ -45,13 +51,16 @@ export const verifyOTP = async (data: {
   otpCode: string;
   channel?: OTPChannel;
 }) => {
-  const response = await api.post("/auth/verify-otp", data);
+  const response = await api.post("/auth/verify-otp", {
+    ...data,
+    email: data.email.trim().toLowerCase(),
+  });
   return response.data;
 };
 
 export const resendOTP = async (email: string, channel: OTPChannel = "email") => {
   const response = await api.post("/auth/resend/otp", {
-    email,
+    email: email.trim().toLowerCase(),
     channel,
   });
 
@@ -60,7 +69,7 @@ export const resendOTP = async (email: string, channel: OTPChannel = "email") =>
 
 export const forgotPassword = async (email: string) => {
   const response = await api.post("/auth/forgot-password", {
-    email,
+    email: email.trim().toLowerCase(),
   });
 
   return response.data;

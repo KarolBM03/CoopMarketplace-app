@@ -111,7 +111,8 @@ export class AuthControllerV2 {
   resetPassword = async (req: AuthRequest, res: Response) => {
     try {
       const useCase = new ResetPasswordUseCase(this.userRepository);
-      const result = await useCase.execute(req.params.token as string, req.body.password);
+      const token = (req.params.token || req.body.token) as string;
+      const result = await useCase.execute(token, req.body.password);
 
       return res.json(result);
     } catch (error) {

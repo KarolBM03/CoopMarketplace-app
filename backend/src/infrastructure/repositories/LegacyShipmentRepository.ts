@@ -5,6 +5,9 @@ import {
   getCustomerShipments,
   getSellerShipments,
   updateShipmentStatus,
+  startShipmentTracking,
+  stopShipmentTracking,
+  updateShipmentLocation,
 } from "../external-services/shipment.service";
 
 export class LegacyShipmentRepository implements ShipmentRepository {
@@ -26,6 +29,18 @@ export class LegacyShipmentRepository implements ShipmentRepository {
 
   findForAdmin() {
     return getAdminShipments();
+  }
+
+  startTracking(data: any) {
+    return startShipmentTracking(data);
+  }
+
+  updateLocation(data: any) {
+    return updateShipmentLocation(data);
+  }
+
+  stopTracking(data: any) {
+    return stopShipmentTracking(data);
   }
 }
 

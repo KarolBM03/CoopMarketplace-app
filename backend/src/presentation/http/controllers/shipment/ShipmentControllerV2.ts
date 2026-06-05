@@ -5,7 +5,10 @@ import {
   GetAdminShipmentsUseCase,
   GetCustomerShipmentsUseCase,
   GetSellerShipmentsUseCase,
+  StartShipmentTrackingUseCase,
+  StopShipmentTrackingUseCase,
   UpdateShipmentStatusUseCase,
+  UpdateShipmentLocationUseCase,
 } from "../../../../application/use-cases/shipment/ShipmentUseCases";
 import { LegacyShipmentRepository } from "../../../../infrastructure/repositories/LegacyShipmentRepository";
 import { handleControllerError } from "../../../../shared/utils/controllerError";
@@ -64,6 +67,47 @@ export class ShipmentControllerV2 {
     try {
       const useCase = new GetAdminShipmentsUseCase(this.shipmentRepository);
       return res.json(await useCase.execute());
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  };
+
+  startTracking = async (req: AuthRequest, res: Response) => {
+    try {
+      const useCase = new StartShipmentTrackingUseCase(this.shipmentRepository);
+      return res.json(await useCase.execute({
+        shipmentId: req.params.shipmentId,
+        actorId: req.user?.id,
+        actorRole: req.user?.role,
+      }));
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  };
+
+  updateLocation = async (req: AuthRequest, res: Response) => {
+    try {
+      const useCase = new UpdateShipmentLocationUseCase(this.shipmentRepository);
+      return res.json(await useCase.execute({
+        shipmentId: req.params.shipmentId,
+        lat: req.body.lat,
+        lng: req.body.lng,
+        actorId: req.user?.id,
+        actorRole: req.user?.role,
+      }));
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  };
+
+  stopTracking = async (req: AuthRequest, res: Response) => {
+    try {
+      const useCase = new StopShipmentTrackingUseCase(this.shipmentRepository);
+      return res.json(await useCase.execute({
+        shipmentId: req.params.shipmentId,
+        actorId: req.user?.id,
+        actorRole: req.user?.role,
+      }));
     } catch (error) {
       return handleControllerError(error, res);
     }

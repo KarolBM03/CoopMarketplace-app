@@ -4,11 +4,15 @@ import { User } from "../../domain/entities/User";
 import { UserRepository } from "../../domain/repositories/UserRepository";
 
 export class PrismaUserRepository implements UserRepository {
+  private normalizeEmail(email: string) {
+    return email.trim().toLowerCase();
+  }
+
   async create(data: Partial<User>): Promise<User> {
     return (await prisma.user.create({
       data: {
         fullName: data.fullName as string,
-        email: data.email as string,
+        email: this.normalizeEmail(data.email as string),
         password: data.password as string,
         phone: data.phone ?? null,
         role: (data.role as Role) || Role.CUSTOMER,
@@ -18,6 +22,14 @@ export class PrismaUserRepository implements UserRepository {
         memberNumber: data.memberNumber ?? null,
         isCooperativeMember: data.isCooperativeMember ?? false,
         cooperativeStatus: data.cooperativeStatus ?? null,
+        acceptedTerms: data.acceptedTerms ?? false,
+        sellerStatus: data.sellerStatus ?? null,
+        storeName: data.storeName ?? null,
+        mainCategory: data.mainCategory ?? null,
+        city: data.city ?? null,
+        documentId: data.documentId ?? null,
+        bankAccount: data.bankAccount ?? null,
+        identityImageUrl: data.identityImageUrl ?? null,
       },
     })) as User;
   }
@@ -29,8 +41,13 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return (await prisma.user.findUnique({
-      where: { email },
+    return (await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: this.normalizeEmail(email),
+          mode: "insensitive",
+        },
+      },
     })) as User | null;
   }
 

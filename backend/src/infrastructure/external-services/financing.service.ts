@@ -4,6 +4,7 @@ import { createNotification } from "../external-services/notification.service";
 import { createAuditLog } from "./audit.service";
 import {
   createPaymentLink,
+  isCooperativeConfigured,
   sendLoanApplication,
 } from "./cooperative.service";
 
@@ -46,6 +47,7 @@ export const createFinancing = async ({
 
   const totalAmount = Number(product.price);
   const monthlyPayment = totalAmount / months;
+  const coopEnabled = isCooperativeConfigured();
 
   const financing = await prisma.financing.create({
     data: {
@@ -65,9 +67,9 @@ export const createFinancing = async ({
       requestedAmount: totalAmount,
       requestedMonths: months,
       requestedMonthlyPayment: monthlyPayment,
-      status: FinancingStatus.SENT_TO_COOPERATIVE,
-      sentToCooperativeAt: new Date(),
-      externalStatus: "SENT_TO_COOPERATIVE",
+      status: coopEnabled ? FinancingStatus.SENT_TO_COOPERATIVE : FinancingStatus.PENDING,
+      sentToCooperativeAt: coopEnabled ? new Date() : null,
+      externalStatus: coopEnabled ? "SENT_TO_COOPERATIVE" : "LOCAL_PENDING_REVIEW",
     },
     include: {
       customer: true,
@@ -75,15 +77,22 @@ export const createFinancing = async ({
     },
   });
 
-  const cooperativeResponse = await sendLoanApplication({
-    financingId: financing.id,
-  });
+  const cooperativeResponse = coopEnabled
+    ? await sendLoanApplication({
+        financingId: financing.id,
+      })
+    : {
+        success: true,
+        status: "LOCAL_PENDING_REVIEW",
+        message: "Solicitud registrada en modo local. Configura COOP_API_URL y COOP_API_KEY para integracion real.",
+        simulated: true,
+      };
 
   const updatedFinancing = await prisma.financing.update({
     where: { id: financing.id },
     data: {
-      externalLoanId: cooperativeResponse.externalLoanId,
-      externalReference: cooperativeResponse.externalReference,
+      externalLoanId: coopEnabled ? (cooperativeResponse as any).externalLoanId : null,
+      externalReference: coopEnabled ? (cooperativeResponse as any).externalReference : null,
       externalStatus: cooperativeResponse.status || "SENT_TO_COOPERATIVE",
       cooperativeResponse,
     },
@@ -98,22 +107,28 @@ export const createFinancing = async ({
 
   await createNotification(
     customerId,
-    "Solicitud enviada a CoopHispanica",
-    `Tu solicitud para ${product.title} fue enviada a CoopHispanica.`,
+    coopEnabled ? "Solicitud enviada a CoopHispanica" : "Solicitud de financiamiento registrada",
+    coopEnabled
+      ? `Tu solicitud para ${product.title} fue enviada a CoopHispanica.`
+      : `Tu solicitud para ${product.title} fue registrada y queda pendiente de revision.`,
   );
 
   await createNotification(
     product.sellerId,
     "Solicitud de financiamiento recibida",
-    `CoopHispanica esta evaluando una solicitud para ${product.title}.`,
+    coopEnabled
+      ? `CoopHispanica esta evaluando una solicitud para ${product.title}.`
+      : `Hay una solicitud de financiamiento pendiente para ${product.title}.`,
   );
 
   await createAuditLog({
     userId: customerId,
-    action: "FINANCING_SENT_TO_COOP",
+    action: coopEnabled ? "FINANCING_SENT_TO_COOP" : "FINANCING_LOCAL_REQUEST",
     entity: "FINANCING",
     entityId: financing.id,
-    description: "Solicitud de financiamiento enviada a CoopHispanica",
+    description: coopEnabled
+      ? "Solicitud de financiamiento enviada a CoopHispanica"
+      : "Solicitud de financiamiento registrada en modo local",
     metadata: { productId, months, cooperativeResponse },
   });
 

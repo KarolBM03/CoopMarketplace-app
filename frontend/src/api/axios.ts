@@ -6,13 +6,15 @@ interface RetryConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: API_BASE_URL,
   timeout: 15000,
 });
 
 const publicApi = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: API_BASE_URL,
   timeout: 15000,
 });
 
@@ -31,8 +33,14 @@ api.interceptors.response.use(
   async (error: AxiosError<{ message?: string }>) => {
     const originalRequest = error.config as RetryConfig | undefined;
     const status = error.response?.status;
+    const requestUrl = originalRequest?.url || "";
+    const isAuthRequest =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/register") ||
+      requestUrl.includes("/auth/refresh") ||
+      requestUrl.includes("/auth/refresh-token");
 
-    if (status === 401 && originalRequest && !originalRequest._retry) {
+    if (status === 401 && originalRequest && !originalRequest._retry && !isAuthRequest) {
       originalRequest._retry = true;
 
       try {
@@ -73,4 +81,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-

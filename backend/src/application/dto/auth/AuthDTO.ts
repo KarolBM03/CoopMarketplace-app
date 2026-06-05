@@ -5,6 +5,14 @@ export interface RegisterUserDTO {
   email: string;
   password: string;
   phone?: string;
+  role?: "CUSTOMER" | "SELLER" | "ADMIN";
+  acceptedTerms?: boolean;
+  storeName?: string;
+  mainCategory?: string;
+  city?: string;
+  documentId?: string;
+  bankAccount?: string;
+  identityImageUrl?: string;
 }
 
 export interface LoginUserDTO {
@@ -32,6 +40,7 @@ export interface ForgotPasswordDTO {
 }
 
 export interface ResetPasswordDTO {
+  token?: string;
   password: string;
 }
 

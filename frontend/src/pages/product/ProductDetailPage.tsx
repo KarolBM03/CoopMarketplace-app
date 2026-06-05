@@ -31,7 +31,7 @@ export default function ProductDetailPage() {
       return;
     }
 
-    const sellerId = product.seller?.id;
+    const sellerId = product.seller?.id || product.sellerId;
 
     if (!sellerId) {
       toast.error("Este producto no tiene vendedor asignado");

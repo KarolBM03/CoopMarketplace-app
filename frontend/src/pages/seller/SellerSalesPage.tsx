@@ -32,7 +32,7 @@ export default function SellerSalesPage() {
 
       setLoading(true);
       setError("");
-      const data = await getSellerSales(user.id);
+      const data = await getSellerSales();
       setSales(Array.isArray(data) ? data : []);
       setPage(1);
     } catch (error: any) {

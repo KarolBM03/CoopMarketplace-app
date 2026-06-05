@@ -42,6 +42,9 @@ export class CreateOrderUseCase {
         },
         data: {
           stock: product.stock - item.quantity,
+          rankingScore: {
+            increment: 0.5,
+          },
         },
       });
 

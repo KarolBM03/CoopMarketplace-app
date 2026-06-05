@@ -39,3 +39,26 @@ export const updateShipmentStatus = async (
 
   return response.data;
 };
+
+export const startShipmentTracking = async (shipmentId: string) => {
+  const response = await api.patch(`/shipments/${shipmentId}/tracking/start`);
+  return response.data;
+};
+
+export const updateShipmentLocation = async (
+  shipmentId: string,
+  lat: number,
+  lng: number,
+) => {
+  const response = await api.patch(`/shipments/${shipmentId}/tracking/location`, {
+    lat,
+    lng,
+  });
+
+  return response.data;
+};
+
+export const stopShipmentTracking = async (shipmentId: string) => {
+  const response = await api.patch(`/shipments/${shipmentId}/tracking/stop`);
+  return response.data;
+};

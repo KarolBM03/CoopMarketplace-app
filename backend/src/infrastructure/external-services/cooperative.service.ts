@@ -17,6 +17,8 @@ const COOP_RETRIES = Number(
 
 const isCoopConfigured = Boolean(COOP_API_URL && COOP_API_KEY);
 
+export const isCooperativeConfigured = () => isCoopConfigured;
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const cooperativeRequest = async <T>(

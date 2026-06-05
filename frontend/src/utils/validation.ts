@@ -3,6 +3,7 @@ import { z } from "zod";
 export const emailSchema = z
   .string()
   .trim()
+  .toLowerCase()
   .email("Correo invalido");
 
 export const phoneSchema = z

@@ -5,6 +5,7 @@ import { CreateOrderUseCase } from "../../../application/use-cases/order/CreateO
 import { CancelOrderUseCase } from "../../../application/use-cases/order/CancelOrderUseCase";
 import { GetOrdersByCustomerUseCase } from "../../../application/use-cases/order/GetOrdersByCustomerUseCase";
 import { GetSellerSalesUseCase } from "../../../application/use-cases/order/GetSellerSalesUseCase";
+import { GetOrderPaymentLinkUseCase } from "../../../application/use-cases/order/GetOrderPaymentLinkUseCase";
 import { UpdateOrderStatusUseCase } from "../../../application/use-cases/order/UpdateOrderStatusUseCase";
 
 const orderRepository = new PrismaOrderRepository();
@@ -94,6 +95,20 @@ export const sellerSalesController = async (
     const sales = await useCase.execute(sellerId as string);
 
     res.json(sales);
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const orderPaymentLinkController = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const useCase = new GetOrderPaymentLinkUseCase(orderRepository);
+    const result = await useCase.execute(req.params.orderId as string);
+
+    res.json(result);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }

@@ -15,6 +15,11 @@ export interface Product {
   rankingScore: number;
   createdAt: Date;
   updatedAt: Date;
+  seller?: {
+    id: string;
+    fullName: string;
+    storeName?: string | null;
+  };
 }
 
 

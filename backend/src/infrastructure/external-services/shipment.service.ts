@@ -87,6 +87,72 @@ export const createShipmentForOrder = async ({
   return shipment;
 };
 
+export const createShipmentsForPaidOrder = async ({
+  orderId,
+  actorId,
+  shippingData,
+}: {
+  orderId: string;
+  actorId?: string;
+  shippingData?: {
+    shippingAddress?: string;
+    province?: string;
+    city?: string;
+    sector?: string;
+    reference?: string;
+    phone?: string;
+    notes?: string;
+  };
+}) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+      shipments: true,
+    },
+  });
+
+  if (!order) {
+    throw new Error("Orden no encontrada");
+  }
+
+  if (!canShipOrder(order.status)) {
+    return [];
+  }
+
+  const sellerIds = Array.from(
+    new Set(order.items.map((item) => item.product.sellerId)),
+  );
+
+  const shipments = [];
+
+  for (const sellerId of sellerIds) {
+    const existingShipment = order.shipments.find(
+      (shipment) => shipment.sellerId === sellerId,
+    );
+
+    if (existingShipment) {
+      shipments.push(existingShipment);
+      continue;
+    }
+
+    shipments.push(
+      await createShipmentForOrder({
+        orderId,
+        sellerId,
+        actorId,
+        data: shippingData,
+      }),
+    );
+  }
+
+  return shipments;
+};
+
 export const updateShipmentStatus = async ({
   shipmentId,
   status,
@@ -98,6 +164,10 @@ export const updateShipmentStatus = async ({
   actorId?: string;
   actorRole?: string;
 }) => {
+  if (!Object.values(ShipmentStatus).includes(status)) {
+    throw new Error("Estado de envio no valido");
+  }
+
   const shipment = await prisma.shipment.findUnique({
     where: { id: shipmentId },
   });
@@ -119,10 +189,16 @@ export const updateShipmentStatus = async ({
 
   if (status === ShipmentStatus.SHIPPED || status === ShipmentStatus.IN_TRANSIT) {
     data.shippedAt = now;
+    data.isTracking = status === ShipmentStatus.IN_TRANSIT;
+    if (status === ShipmentStatus.IN_TRANSIT && !shipment.trackingStartedAt) {
+      data.trackingStartedAt = now;
+    }
   }
 
   if (status === ShipmentStatus.DELIVERED) {
     data.deliveredAt = now;
+    data.isTracking = false;
+    data.trackingEndedAt = now;
   }
 
   const updatedShipment = await prisma.shipment.update({
@@ -185,6 +261,91 @@ export const getAdminShipments = async () => {
   return prisma.shipment.findMany({
     include: { order: true },
     orderBy: { createdAt: "desc" },
+  });
+};
+
+const canManageShipmentTracking = (shipment: { sellerId: string }, actorId?: string, actorRole?: string) =>
+  actorRole === "ADMIN" || shipment.sellerId === actorId;
+
+export const startShipmentTracking = async ({
+  shipmentId,
+  actorId,
+  actorRole,
+}: {
+  shipmentId: string;
+  actorId?: string;
+  actorRole?: string;
+}) => {
+  const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
+
+  if (!shipment) throw new Error("Envio no encontrado");
+  if (!canManageShipmentTracking(shipment, actorId, actorRole)) {
+    throw new Error("No puedes iniciar GPS para este envio");
+  }
+
+  return prisma.shipment.update({
+    where: { id: shipmentId },
+    data: {
+      isTracking: true,
+      trackingStartedAt: shipment.trackingStartedAt || new Date(),
+      status: ShipmentStatus.IN_TRANSIT,
+    },
+  });
+};
+
+export const updateShipmentLocation = async ({
+  shipmentId,
+  lat,
+  lng,
+  actorId,
+  actorRole,
+}: {
+  shipmentId: string;
+  lat: number;
+  lng: number;
+  actorId?: string;
+  actorRole?: string;
+}) => {
+  const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
+
+  if (!shipment) throw new Error("Envio no encontrado");
+  if (!canManageShipmentTracking(shipment, actorId, actorRole)) {
+    throw new Error("No puedes compartir ubicacion para este envio");
+  }
+
+  return prisma.shipment.update({
+    where: { id: shipmentId },
+    data: {
+      currentLatitude: Number(lat),
+      currentLongitude: Number(lng),
+      lastLocationAt: new Date(),
+      isTracking: true,
+    },
+  });
+};
+
+export const stopShipmentTracking = async ({
+  shipmentId,
+  actorId,
+  actorRole,
+}: {
+  shipmentId: string;
+  actorId?: string;
+  actorRole?: string;
+}) => {
+  const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
+
+  if (!shipment) throw new Error("Envio no encontrado");
+  if (!canManageShipmentTracking(shipment, actorId, actorRole)) {
+    throw new Error("No puedes detener GPS para este envio");
+  }
+
+  return prisma.shipment.update({
+    where: { id: shipmentId },
+    data: {
+      isTracking: false,
+      trackingEndedAt: new Date(),
+    },
   });
 };
 

@@ -1,15 +1,5 @@
-import api from "../api/axios";
-import { createIdempotencyKey } from "../utils/finance";
-
 export const payInstallment = async (installmentId: string) => {
-  const response = await api.patch(
-    `/installments/pay/${installmentId}`,
-    {},
-    {
-      headers: {
-        "Idempotency-Key": createIdempotencyKey("installment"),
-      },
-    },
+  throw new Error(
+    `El pago de cuotas esta pendiente de integracion con la cooperativa. Cuota: ${installmentId}`,
   );
-  return response.data;
 };
