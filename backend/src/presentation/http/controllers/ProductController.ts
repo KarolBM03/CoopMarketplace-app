@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
-import { PrismaProductRepository } from "../../../infrastructure/respositories/PrismaProductRepository";
+import { PrismaProductRepository } from "../../../infrastructure/repositories/PrismaProductRepository";
 import { CreateProductUseCase } from "../../../application/use-cases/product/CreateProductUseCase";
 import { GetProductsUseCase } from "../../../application/use-cases/product/GetProductsUseCase";
 import { GetProductByIdUseCase } from "../../../application/use-cases/product/GetProductByIdUseCase";
 import { UpdateProductUseCase } from "../../../application/use-cases/product/UpdateProductUseCase";
 import { DeleteProductUseCase } from "../../../application/use-cases/product/DeleteProductUseCase";
 import { GetSellerProductsUseCase } from "../../../application/use-cases/product/GetSellerProductsUseCase";
-import { AuthRequest } from "../../../middlewares/auth.middleware";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
 const productRepository = new PrismaProductRepository();
 
@@ -116,3 +116,6 @@ export const getSellerProductsController = async (
     res.status(400).json({ message: error.message });
   }
 };
+
+
+

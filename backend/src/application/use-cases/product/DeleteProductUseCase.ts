@@ -17,3 +17,6 @@ export class DeleteProductUseCase {
     return await this.productRepository.softDelete(productId);
   }
 }
+
+
+

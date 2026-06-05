@@ -19,6 +19,12 @@ export interface User {
 
   acceptedTerms?: boolean;
 
+  storeName?: string | null;
+  mainCategory?: string | null;
+  city?: string | null;
+  documentId?: string | null;
+  bankAccount?: string | null;
+  identityImageUrl?: string | null;
   sellerStatus?: string | null;
   cooperativeMemberId?: string | null;
   memberNumber?: string | null;
@@ -28,3 +34,6 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
 }
+
+
+

@@ -1,4 +1,5 @@
 import { UserRepository } from "../../../domain/repositories/UserRepository";
+import { sanitizeUser } from "../../../shared/utils/sanitizeUser";
 
 export class GetUserProfileUseCase {
   constructor(private userRepository: UserRepository) {}
@@ -10,15 +11,9 @@ export class GetUserProfileUseCase {
       throw new Error("Usuario no encontrado");
     }
 
-    const {
-      password,
-      otpCode,
-      refreshToken,
-      resetPasswordToken,
-      resetPasswordExpires,
-      ...safeUser
-    } = user;
-
-    return safeUser;
+    return sanitizeUser(user);
   }
 }
+
+
+

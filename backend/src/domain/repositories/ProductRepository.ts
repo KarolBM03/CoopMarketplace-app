@@ -8,3 +8,6 @@ export interface ProductRepository {
   softDelete(id: string): Promise<Product>;
   findBySeller(sellerId: string): Promise<Product[]>;
 }
+
+
+

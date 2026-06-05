@@ -1,7 +1,6 @@
+import { OTPChannel } from "../../dto/auth/AuthDTO";
 import { UserRepository } from "../../../domain/repositories/UserRepository";
-import { requestOTP } from "../../../services/otp.provider.service";
-
-type OTPChannel = "email" | "sms" | "whatsapp";
+import { requestOTP } from "../../../infrastructure/external-services/otp.provider.service";
 
 export class ResendOTPUseCase {
   constructor(private userRepository: UserRepository) {}
@@ -44,3 +43,6 @@ export class ResendOTPUseCase {
     };
   }
 }
+
+
+

@@ -1,5 +1,6 @@
 import { UserRepository } from "../../../domain/repositories/UserRepository";
-import { generateToken } from "../../../utils/generateToken";
+import { sanitizeUser } from "../../../shared/utils/sanitizeUser";
+import { generateToken } from "../../../shared/utils/generateToken";
 
 export class RefreshTokenUseCase {
   constructor(private userRepository: UserRepository) {}
@@ -21,17 +22,13 @@ export class RefreshTokenUseCase {
 
     const accessToken = generateToken(user.id);
 
-    const {
-      password,
-      otpCode,
-      refreshToken: userRefreshToken,
-      ...safeUser
-    } = user;
-
     return {
-      user: safeUser,
+      user: sanitizeUser(user),
       accessToken,
       refreshToken,
     };
   }
 }
+
+
+

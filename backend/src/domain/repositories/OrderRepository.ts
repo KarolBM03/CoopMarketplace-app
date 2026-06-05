@@ -8,3 +8,6 @@ export interface OrderRepository {
   delete(id: string): Promise<void>;
   getSellerSales(sellerId: string): Promise<any[]>;
 }
+
+
+

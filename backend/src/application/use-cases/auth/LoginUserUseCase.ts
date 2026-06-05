@@ -1,11 +1,14 @@
 import bcrypt from "bcrypt";
+import { LoginUserDTO } from "../../dto/auth/AuthDTO";
+import { SellerStatus } from "../../../domain/enums/SellerStatus";
 import { UserRepository } from "../../../domain/repositories/UserRepository";
-import { generateToken } from "../../../utils/generateToken";
+import { sanitizeUser } from "../../../shared/utils/sanitizeUser";
+import { generateToken } from "../../../shared/utils/generateToken";
 
 export class LoginUserUseCase {
   constructor(private userRepository: UserRepository) {}
 
-  async execute(data: { email: string; password: string }) {
+  async execute(data: LoginUserDTO) {
     const user = await this.userRepository.findByEmail(data.email);
 
     if (!user) {
@@ -20,7 +23,7 @@ export class LoginUserUseCase {
       throw new Error("Debe verificar su cuenta antes de iniciar sesión");
     }
 
-    if (user.role === "SELLER" && user.sellerStatus !== "APPROVED") {
+    if (user.role === "SELLER" && user.sellerStatus !== SellerStatus.APPROVED) {
       throw new Error(
         "Su perfil de vendedor aun no ha sido aprobado, espere a que se lo aprueben",
       );
@@ -39,19 +42,13 @@ export class LoginUserUseCase {
       refreshToken,
     });
 
-    const {
-      password,
-      otpCode,
-      refreshToken: _refreshToken,
-      resetPasswordToken,
-      resetPasswordExpires,
-      ...safeUser
-    } = user;
-
     return {
-      user: safeUser,
+      user: sanitizeUser(user),
       accessToken,
       refreshToken,
     };
   }
 }
+
+
+

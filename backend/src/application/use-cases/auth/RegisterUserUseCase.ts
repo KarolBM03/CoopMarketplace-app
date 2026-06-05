@@ -1,15 +1,12 @@
 import bcrypt from "bcrypt";
+import { RegisterUserDTO } from "../../dto/auth/AuthDTO";
+import { UserRole } from "../../../domain/enums/UserRole";
 import { UserRepository } from "../../../domain/repositories/UserRepository";
 
 export class RegisterUserUseCase {
   constructor(private userRepository: UserRepository) {}
 
-  async execute(data: {
-    fullName: string;
-    email: string;
-    password: string;
-    phone?: string;
-  }) {
+  async execute(data: RegisterUserDTO) {
     const existingUser = await this.userRepository.findByEmail(data.email);
 
     if (existingUser) {
@@ -23,7 +20,7 @@ export class RegisterUserUseCase {
       email: data.email,
       password: hashedPassword,
       phone: data.phone,
-      role: "CUSTOMER",
+      role: UserRole.CUSTOMER,
       isVerified: false,
       isBlocked: false,
     });
@@ -31,3 +28,6 @@ export class RegisterUserUseCase {
     return user;
   }
 }
+
+
+

@@ -11,3 +11,6 @@ export class GetSellerProductsUseCase {
     return await this.productRepository.findBySeller(sellerId);
   }
 }
+
+
+

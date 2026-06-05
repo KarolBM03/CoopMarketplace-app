@@ -1,6 +1,6 @@
 import { Response } from "express";
-import { AuthRequest } from "../../../middlewares/auth.middleware";
-import { PrismaOrderRepository } from "../../../infrastructure/respositories/PrismaOrderRepository";
+import { AuthRequest } from "../middlewares/auth.middleware";
+import { PrismaOrderRepository } from "../../../infrastructure/repositories/PrismaOrderRepository";
 import { CreateOrderUseCase } from "../../../application/use-cases/order/CreateOrderUseCase";
 import { CancelOrderUseCase } from "../../../application/use-cases/order/CancelOrderUseCase";
 import { GetOrdersByCustomerUseCase } from "../../../application/use-cases/order/GetOrdersByCustomerUseCase";
@@ -98,3 +98,6 @@ export const sellerSalesController = async (
     res.status(400).json({ message: error.message });
   }
 };
+
+
+

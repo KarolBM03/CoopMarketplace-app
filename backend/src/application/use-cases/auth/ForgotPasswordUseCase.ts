@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { UserRepository } from "../../../domain/repositories/UserRepository";
-import { sendResetPasswordEmail } from "../../../services/email.service";
+import { sendResetPasswordEmail } from "../../../infrastructure/external-services/email.service";
 
 export class ForgotPasswordUseCase {
   constructor(private userRepository: UserRepository) {}
@@ -31,3 +31,6 @@ export class ForgotPasswordUseCase {
     };
   }
 }
+
+
+

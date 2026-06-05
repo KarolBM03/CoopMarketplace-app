@@ -1,4 +1,4 @@
-import prisma from "../../../config/prisma";
+import prisma from "../../../infrastructure/database/prisma";
 import { OrderRepository } from "../../../domain/repositories/OrderRepository";
 
 interface OrderItemData {
@@ -72,3 +72,6 @@ export class CreateOrderUseCase {
     return order;
   }
 }
+
+
+

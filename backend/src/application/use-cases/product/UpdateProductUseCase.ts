@@ -17,3 +17,6 @@ export class UpdateProductUseCase {
     return await this.productRepository.update(productId, data);
   }
 }
+
+
+

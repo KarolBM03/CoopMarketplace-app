@@ -11,3 +11,6 @@ export class GetSellerSalesUseCase {
     return await this.orderRepository.getSellerSales(sellerId);
   }
 }
+
+
+

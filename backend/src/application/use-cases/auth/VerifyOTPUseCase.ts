@@ -1,7 +1,7 @@
+import { OTPChannel } from "../../dto/auth/AuthDTO";
 import { UserRepository } from "../../../domain/repositories/UserRepository";
-import { verifyProviderOTP } from "../../../services/otp.provider.service";
-
-type OTPChannel = "email" | "sms" | "whatsapp";
+import { sanitizeUser } from "../../../shared/utils/sanitizeUser";
+import { verifyProviderOTP } from "../../../infrastructure/external-services/otp.provider.service";
 
 export class VerifyOTPUseCase {
   constructor(private userRepository: UserRepository) {}
@@ -51,16 +51,12 @@ export class VerifyOTPUseCase {
 
     const updatedUser = await this.userRepository.findById(user.id);
 
-    const {
-      password,
-      otpCode: _otpCode,
-      refreshToken,
-      ...safeUser
-    } = updatedUser!;
-
     return {
       message: "Ya su cuenta esta verificada correctamente",
-      user: safeUser,
+      user: sanitizeUser(updatedUser!),
     };
   }
 }
+
+
+
