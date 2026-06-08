@@ -17,7 +17,12 @@ export default function ProductCard({ product }: Props) {
       state={{ source }}
       className="block overflow-hidden rounded-3xl bg-white transition"
     >
-      <div className="h-56 bg-slate-100">
+      <div className="h-56 bg-slate-100 relative">
+        {product.rankingScore && product.rankingScore >= 50 && (
+          <div className="absolute left-3 top-3 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-black text-white shadow-lg">
+            Destacado
+          </div>
+        )}
         <img
           src={
             product.imageUrl ||

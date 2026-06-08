@@ -5,7 +5,7 @@ export const authorize = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({
-        message: "No autorizado",
+        message: "No esta autorizado",
       });
     }
 
@@ -18,6 +18,3 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
-
-
-

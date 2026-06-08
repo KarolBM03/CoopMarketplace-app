@@ -13,14 +13,12 @@ export class GetProductByIdUseCase {
     await this.productRepository.update(productId, {
       views: product.views + 1,
       rankingScore:
-        product.salesCount * 3 +
-        (product.views + 1) * 0.25 +
-        (product.isFinanced ? 2 : 0),
+        product.salesCount * 5 +
+        (product.ratingAverage || 0) * 10 +
+        (product.views + 1) * 0.1 +
+        (product.isFinanced ? 10 : 0),
     });
 
     return await this.productRepository.findById(productId);
   }
 }
-
-
-

@@ -1,5 +1,6 @@
 import { CheckCircle2, Clock, Package, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { socket } from "../../socket.ts";
 import ShipmentMap from "../../components/shipment/ShipmentMap";
 import { getCustomerShipments } from "../../services/shipment.service";
@@ -28,6 +29,7 @@ const stepByStatus: Record<string, number> = {
 
 export default function CustomerShipmentsPage() {
   const user = useAuthStore.getState().user;
+  const navigate = useNavigate();
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState<
@@ -62,7 +64,10 @@ export default function CustomerShipmentsPage() {
 
         return acc;
       },
-      {} as Record<string, { lat: number; lng: number; lastLocationAt?: string }>,
+      {} as Record<
+        string,
+        { lat: number; lng: number; lastLocationAt?: string }
+      >,
     );
 
     setLocations((prev) => ({
@@ -89,15 +94,25 @@ export default function CustomerShipmentsPage() {
       }));
     };
 
+    const handleTrackingStopped = (data: any) => {
+      setLocations((prev) => {
+        const next = { ...prev };
+        delete next[data.shipmentId];
+        return next;
+      });
+    };
+
     const handleShipmentError = (data: any) => {
       console.warn(data.message);
     };
 
     socket.on("shipment:location:changed", handleLocationChanged);
+    socket.on("shipment:tracking:stopped", handleTrackingStopped);
     socket.on("shipment:error", handleShipmentError);
 
     return () => {
       socket.off("shipment:location:changed", handleLocationChanged);
+      socket.off("shipment:tracking:stopped", handleTrackingStopped);
       socket.off("shipment:error", handleShipmentError);
     };
   }, [shipments, user]);
@@ -124,9 +139,6 @@ export default function CustomerShipmentsPage() {
           <h1 className="mt-2 text-3xl font-black text-slate-950">
             Mis pedidos
           </h1>
-          <p className="mt-2 text-sm font-medium text-slate-500">
-            Revisa el estado de tus productos enviados por los vendedores.
-          </p>
         </div>
 
         <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
@@ -191,6 +203,21 @@ export default function CustomerShipmentsPage() {
                     {statusLabel(shipment.status)}
                   </span>
                 </div>
+
+                {shipment.status === "DELIVERED" && product?.id && (
+                  <button
+                    onClick={() =>
+                      navigate(`/products/${product.id}`, {
+                        state: {
+                          source: "customer",
+                        },
+                      })
+                    }
+                    className="mt-3 rounded-xl bg-orange-500 px-5 py-3 text-sm font-black text-white transition hover:bg-orange-400"
+                  >
+                    Opinar sobre el producto
+                  </button>
+                )}
 
                 <div className="mt-6 grid gap-2 sm:grid-cols-5">
                   {steps.map((step, index) => {

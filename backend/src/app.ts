@@ -21,6 +21,7 @@ import onionWalletRoutes from "./presentation/http/routes/wallet.routes";
 import onionTransactionRoutes from "./presentation/http/routes/transaction.routes";
 import onionReportRoutes from "./presentation/http/routes/report.routes";
 import { setupSwaggerDocs } from "./infrastructure/docs/swagger";
+import reviewRoutes from "./presentation/http/routes/review.routes";
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use("/api/queues", onionQueueRoutes);
 app.use("/api/shipments", onionShipmentRoutes);
 app.use("/api/chat", onionChatRoutes);
 app.use("/api/push", onionPushRoutes);
+app.use("/api/reviews", reviewRoutes);
 app.get("/", (_req, res) => {
   res.send("Marketplace API Corriendo");
 });

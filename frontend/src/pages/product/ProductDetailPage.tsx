@@ -5,6 +5,7 @@ import {
   ShoppingCart,
   UserPlus,
   WalletCards,
+  Star,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -15,12 +16,22 @@ import { useCartStore } from "../../store/cart.store";
 import type { Product } from "../../types/product.types";
 import { MessageCircle } from "lucide-react";
 import { createConversation } from "../../services/chat.service";
+import { getProductReviews } from "../../services/review.service";
+import { createProductReview } from "../../services/review.service";
+import { getMyOrders } from "../../services/order.service";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [product, setProduct] = useState<Product | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [savingReview, setSavingReview] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [reviewOrderId, setReviewOrderId] = useState<string | null>(null);
   const addToCart = useCartStore.getState().addToCart;
   const user = useAuthStore.getState().user;
   const source = (location.state as { source?: string } | null)?.source;
@@ -54,6 +65,41 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handleReview = async () => {
+    if (!product) return;
+
+    try {
+      setSavingReview(true);
+
+      if (!reviewOrderId) {
+        toast.error("Solo puedes opinar cuando recibes el producto");
+        return;
+      }
+
+      await createProductReview(product.id, {
+        orderId: reviewOrderId,
+        rating,
+        comment,
+      });
+      toast.success("Tu opinión fue guardada correctamente");
+
+      setComment("");
+      setRating(5);
+      await loadProduct();
+      await loadReviews();
+
+      setCanReview(false);
+      setHasReviewed(true);
+      setReviewOrderId(null);
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "No pude guardar tu opinión",
+      );
+    } finally {
+      setSavingReview(false);
+    }
+  };
+
   const panelPath =
     user?.role === "ADMIN"
       ? "/admin"
@@ -62,13 +108,60 @@ export default function ProductDetailPage() {
         : "/customer";
 
   useEffect(() => {
-    if (id) loadProduct();
+    if (id) {
+      loadProduct();
+      loadReviews();
+      checkCanReview();
+    }
   }, [id]);
 
   const loadProduct = async () => {
     try {
       const data = await getProductById(id!);
       setProduct(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const loadReviews = async () => {
+    try {
+      const data = await getProductReviews(id!);
+      setReviews(data);
+
+      const alreadyReviewed = data.some(
+        (review: any) => review.customerId === user?.id,
+      );
+
+      setHasReviewed(alreadyReviewed);
+
+      if (alreadyReviewed) {
+        setCanReview(false);
+        setReviewOrderId(null);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const checkCanReview = async () => {
+    if (!user || user.role !== "CUSTOMER" || !id) return;
+
+    try {
+      const orders = await getMyOrders();
+
+      const deliveredOrder = orders.find((order: any) => {
+        const hasProduct = order.items?.some(
+          (item: any) => item.productId === id,
+        );
+
+        return order.status === "DELIVERED" && hasProduct;
+      });
+
+      if (deliveredOrder) {
+        setCanReview(true);
+        setReviewOrderId(deliveredOrder.id);
+      }
     } catch (error) {
       console.log(error);
     }
@@ -172,6 +265,34 @@ export default function ProductDetailPage() {
               {product.description}
             </p>
 
+            <div className="mt-6 flex items-center gap-2">
+              <span className="text-lg font-black text-slate-900">
+                {(product.ratingAverage || 0).toFixed(1)}
+              </span>
+
+              <div className="flex items-center">
+                {Array.from({ length: 5 }).map((_, index) => {
+                  const rating = product.ratingAverage || 0;
+                  const filled = index < Math.round(rating);
+
+                  return (
+                    <Star
+                      key={index}
+                      className={`h-6 w-6 ${
+                        filled
+                          ? "fill-orange-500 text-orange-500"
+                          : "fill-slate-200 text-slate-200"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+
+              <span className="text-sm text-slate-500">
+                ({product.ratingCount || 0} Opiniones)
+              </span>
+            </div>
+
             <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6">
               <p className="text-sm font-bold text-slate-500">Precio total</p>
 
@@ -258,6 +379,85 @@ export default function ProductDetailPage() {
                   </button>
                 </div>
               )}
+            </div>
+
+            {canReview && !hasReviewed && (
+              <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <h4 className="text-lg font-black text-slate-950">
+                  Deja tu opinión
+                </h4>
+
+                <div className="mt-4 flex gap-1">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setRating(index + 1)}
+                    >
+                      <Star
+                        className={`h-7 w-7 ${
+                          index < rating
+                            ? "fill-orange-500 text-orange-500"
+                            : "fill-slate-200 text-slate-200"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Cuenta cómo te fue con este producto"
+                  className="mt-4 min-h-28 w-full rounded-xl border border-slate-200 p-4 text-sm outline-none focus:border-emerald-500"
+                />
+
+                <button
+                  onClick={handleReview}
+                  disabled={savingReview}
+                  className="mt-4 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-500 disabled:bg-slate-300"
+                >
+                  {savingReview ? "Guardando..." : "Guardar opinión"}
+                </button>
+              </div>
+            )}
+
+            <div className="mt-8">
+              <h3 className="text-xl font-black text-slate-950">
+                Opiniones de clientes
+              </h3>
+
+              <div className="mt-4 space-y-4">
+                {reviews.length === 0 ? (
+                  <div className="rounded-xl border border-slate-200 p-5">
+                    Aún no hay opiniones para este producto
+                  </div>
+                ) : (
+                  reviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="rounded-xl border border-slate-200 bg-white p-5"
+                    >
+                      <div className="flex items-center gap-2">
+                        {Array.from({ length: review.rating }).map(
+                          (_, index) => (
+                            <Star
+                              key={index}
+                              className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                            />
+                          ),
+                        )}
+                      </div>
+
+                      <p className="mt-3 text-slate-700">{review.comment}</p>
+
+                      <p className="mt-2 text-sm font-bold text-slate-500">
+                        {review.customer?.fullName}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </section>
         </main>

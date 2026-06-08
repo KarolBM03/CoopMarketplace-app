@@ -5,6 +5,7 @@ import { socket } from "../../socket";
 import {
   getSellerShipments,
   updateShipmentStatus,
+  submitShipmentProof,
   type ShipmentStatus,
 } from "../../services/shipment.service";
 import { useAuthStore } from "../../store/auth.store";
@@ -23,7 +24,6 @@ const nextStatusByCurrent: Partial<
   PENDING_PREPARATION: nextStatuses[0],
   PREPARING: nextStatuses[1],
   SHIPPED: nextStatuses[2],
-  IN_TRANSIT: nextStatuses[3],
 };
 
 const statusClass: Record<string, string> = {
@@ -45,6 +45,13 @@ export default function SellerShipmentsPage() {
   const [trackingShipmentId, setTrackingShipmentId] = useState<string | null>(
     null,
   );
+  const [deliveryShipmentId, setDeliveryShipmentId] = useState<string | null>(
+    null,
+  );
+  const [customerPhoto, setCustomerPhoto] = useState<File | null>(null);
+  const [productPhoto, setProductPhoto] = useState<File | null>(null);
+  const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
 
   useEffect(() => {
     loadShipments();
@@ -140,6 +147,67 @@ export default function SellerShipmentsPage() {
     setWatchId(null);
     setTrackingShipmentId(null);
     toast.success("Seguimiento GPS detenido");
+  };
+
+  const confirmDelivery = async () => {
+    if (!deliveryShipmentId) return;
+
+    if (!customerPhoto) {
+      toast.error("Sube la foto del cliente con el producto");
+      return;
+    }
+
+    if (!productPhoto) {
+      toast.error("Sube la foto del producto");
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      toast.error("Tu navegador no soporta GPS");
+      return;
+    }
+
+    setDeliveryLoading(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const formData = new FormData();
+
+          formData.append("customerPhoto", customerPhoto);
+          formData.append("productPhoto", productPhoto);
+          formData.append("latitude", String(position.coords.latitude));
+          formData.append("longitude", String(position.coords.longitude));
+          formData.append("notes", deliveryNotes);
+
+          await submitShipmentProof(deliveryShipmentId, formData);
+
+          toast.success("Entrega guardada con éxito");
+
+          setDeliveryShipmentId(null);
+          setCustomerPhoto(null);
+          setProductPhoto(null);
+          setDeliveryNotes("");
+
+          await loadShipments();
+        } catch (error: any) {
+          toast.error(
+            error.response?.data?.message || "No pude guardar la entrega",
+          );
+        } finally {
+          setDeliveryLoading(false);
+        }
+      },
+      () => {
+        setDeliveryLoading(false);
+        toast.error("No pude tomar tu ubicación");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    );
   };
 
   return (
@@ -251,11 +319,94 @@ export default function SellerShipmentsPage() {
                       Iniciar GPS
                     </button>
                   ))}
+                {shipment.status === "IN_TRANSIT" && (
+                  <button
+                    onClick={() => setDeliveryShipmentId(shipment.id)}
+                    className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-500"
+                  >
+                    Confirmar entrega
+                  </button>
+                )}
               </article>
             );
           })
         )}
       </div>
+
+      {deliveryShipmentId && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 px-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
+            <h2 className="text-2xl font-black text-slate-950">
+              Confirmar entrega
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Sube las dos fotos para guardar la evidencia de la entregaque
+              hiciste.
+            </p>
+
+            <div className="mt-5 grid gap-4">
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-700">
+                  Sube foto del cliente con el producto
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) =>
+                    setCustomerPhoto(e.target.files?.[0] || null)
+                  }
+                  className="rounded-xl border border-slate-200 p-3 text-sm"
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-700">
+                  Sube foto del producto solo
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => setProductPhoto(e.target.files?.[0] || null)}
+                  className="rounded-xl border border-slate-200 p-3 text-sm"
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-700">
+                  Nota de entrega
+                </span>
+                <textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  placeholder="Ej: La cliente recibió el producto sin problema"
+                  className="min-h-24 rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-500"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setDeliveryShipmentId(null)}
+                disabled={deliveryLoading}
+                className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-600 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={confirmDelivery}
+                disabled={deliveryLoading}
+                className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-500 disabled:bg-slate-300"
+              >
+                {deliveryLoading ? "Guardando..." : "Guardar entrega"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

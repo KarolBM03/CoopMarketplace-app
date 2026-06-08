@@ -32,6 +32,7 @@ import VerifyOTPPage from "../pages/auth/VerifyOTPPage";
 import CustomerShipmentsPage from "../pages/customer/CustomerShipments";
 import ChatPage from "../pages/chat/ChatPage";
 import AdminChatAuditPage from "../pages/admin/AdminChatPage";
+import AdminDeliveryProofsPage from "../pages/admin/AdminDeliveryProofsPage";
 
 export default function AppRoutes() {
   return (
@@ -54,6 +55,10 @@ export default function AppRoutes() {
           <Route path="financings" element={<AdminFinancingsPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
           <Route path="/admin/chats" element={<AdminChatAuditPage />} />
+          <Route
+            path="/admin/delivery-proofs"
+            element={<AdminDeliveryProofsPage />}
+          />
         </Route>
         <Route
           path="/seller"

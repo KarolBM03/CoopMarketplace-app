@@ -1,8 +1,15 @@
 import {
   ChevronLeft,
   ChevronRight,
+  CreditCard,
+  Eye,
+  Flame,
   Search,
   SlidersHorizontal,
+  TrendingUp,
+  Trophy,
+  ArrowDownNarrowWide,
+  ArrowUpNarrowWide,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
@@ -20,13 +27,41 @@ const categories = [
   "Ropa",
 ];
 
+const sortOptions = [
+  {
+    value: "relevance",
+    label: "Relevantes",
+    icon: Trophy,
+  },
+  {
+    value: "best_selling",
+    label: "Más vendidos",
+    icon: Flame,
+  },
+  {
+    value: "most_viewed",
+    label: "Más vistos",
+    icon: Eye,
+  },
+  {
+    value: "price_asc",
+    label: "Menor precio",
+    icon: ArrowUpNarrowWide,
+  },
+  {
+    value: "price_desc",
+    label: "Mayor precio",
+    icon: ArrowDownNarrowWide,
+  },
+];
+
 export default function MarketplacePage() {
   const location = useLocation();
   const isCustomerView = location.pathname.startsWith("/customer");
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todos");
-  const [sort, setSort] = useState("newest");
+  const [sort, setSort] = useState("relevance");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
@@ -39,6 +74,7 @@ export default function MarketplacePage() {
     () => (minPrice ? Number(minPrice) : undefined),
     [minPrice],
   );
+
   const normalizedMax = useMemo(
     () => (maxPrice ? Number(maxPrice) : undefined),
     [maxPrice],
@@ -55,6 +91,7 @@ export default function MarketplacePage() {
   const loadProducts = async () => {
     try {
       setLoading(true);
+
       const data = await getProducts(
         page,
         12,
@@ -82,6 +119,7 @@ export default function MarketplacePage() {
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600 font-black text-white shadow-lg shadow-emerald-200">
                 C
               </div>
+
               <h1 className="text-xl font-black text-slate-900">CoopMarket</h1>
             </div>
 
@@ -91,75 +129,115 @@ export default function MarketplacePage() {
       )}
 
       <main
-        className={`mx-auto max-w-7xl px-6 pb-20 ${isCustomerView ? "pt-8" : "pt-28"}`}
+        className={`mx-auto max-w-7xl px-6 pb-20 ${
+          isCustomerView ? "pt-8" : "pt-28"
+        }`}
       >
         <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-black uppercase tracking-wide text-emerald-600">
               Marketplace
             </p>
+
             <h1 className="mt-2 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
-              Encuentra productos unicos
+              Encuentra productos únicos
             </h1>
+
             <p className="mt-4 max-w-2xl text-lg font-medium text-slate-500">
-              El mejor lugar para explora productos con pagos directos y
-              financiamiento cooperativo.
+              El mejor lugar para buscar productos con financiamiento
+              cooperativo.
             </p>
           </div>
 
           {isCustomerView && <SearchBox value={search} onChange={setSearch} />}
         </div>
 
-        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-4 flex items-center gap-2 text-sm font-black text-slate-700">
+        <section className="mb-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-5 flex items-center gap-2 text-sm font-black text-slate-700">
             <SlidersHorizontal className="h-5 w-5 text-emerald-600" />
             Filtros
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[1fr_140px_140px_170px]">
-            <div className="flex flex-wrap gap-2">
-              {categories.map((item) => (
-                <button
-                  key={item}
-                  onClick={() => setCategory(item)}
-                  className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-                    category === item
-                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100"
-                      : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700"
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
+          <div className="grid gap-5">
+            <div>
+              <p className="mb-3 text-xs font-black uppercase tracking-wide text-slate-400">
+                Categorías
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {categories.map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setCategory(item)}
+                    className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+                      category === item
+                        ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100"
+                        : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <input
-              type="number"
-              placeholder="Min RD$"
-              value={minPrice}
-              onChange={(event) => setMinPrice(event.target.value)}
-              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-emerald-500"
-            />
+            <div className="grid gap-3 lg:grid-cols-[160px_160px_1fr]">
+              <input
+                type="number"
+                placeholder="Min RD$"
+                value={minPrice}
+                onChange={(event) => setMinPrice(event.target.value)}
+                className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-emerald-500"
+              />
 
-            <input
-              type="number"
-              placeholder="Max RD$"
-              value={maxPrice}
-              onChange={(event) => setMaxPrice(event.target.value)}
-              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-emerald-500"
-            />
+              <input
+                type="number"
+                placeholder="Max RD$"
+                value={maxPrice}
+                onChange={(event) => setMaxPrice(event.target.value)}
+                className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-emerald-500"
+              />
 
-            <select
-              value={sort}
-              onChange={(event) => setSort(event.target.value)}
-              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold outline-none focus:border-emerald-500"
-            >
-              <option value="newest">Mas recientes</option>
-              <option value="price_asc">Precio menor</option>
-              <option value="price_desc">Precio mayor</option>
-            </select>
+              <div className="flex flex-wrap gap-2">
+                {sortOptions.map((option) => {
+                  const Icon = option.icon;
+                  const active = sort === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => setSort(option.value)}
+                      className={`inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-black transition ${
+                        active
+                          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100"
+                          : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </section>
+
+        {sort === "relevance" && products.length > 0 && (
+          <section className="mb-8 rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600 text-white">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h2 className="text-lg font-black text-slate-950">
+                  Productos destacados
+                </h2>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="mb-6 flex items-center justify-between">
           <p className="text-sm font-bold text-slate-500">
@@ -167,8 +245,9 @@ export default function MarketplacePage() {
               ? "Buscando productos..."
               : `${total} productos encontrados`}
           </p>
+
           <p className="text-sm font-bold text-slate-500">
-            Pagina {page} de {totalPages}
+            Página {page} de {totalPages}
           </p>
         </div>
 
@@ -236,6 +315,7 @@ function SearchBox({
   return (
     <div className="flex h-12 w-full max-w-xl items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm transition focus-within:border-emerald-500 lg:w-[420px]">
       <Search className="h-5 w-5 text-slate-400" />
+
       <input
         type="text"
         placeholder="Buscar productos..."

@@ -51,7 +51,17 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
+  productReviews ProductReview[]
+
+  sellerReviewsReceived SellerReview[] @relation("SellerReviewsReceived")
+  sellerReviewsGiven SellerReview[] @relation("SellerReviewsGiven")
+
+  sellerRatingAverage Float @default(0)
+  sellerRatingCount Int @default(0)
+  sellerScore Int @default(100)
+
   deliveryProofs ShipmentProof[]
+  deliveryScore Int @default(100)
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
 
@@ -83,10 +93,58 @@ model Product {
   category     String      @default("Otros")
   conversations Conversation[]
 
+  ratingAverage Float @default(0)
+  ratingCount Int @default(0)
+  reviews ProductReview[]
+
   @@index([isActive, category])
   @@index([sellerId, isActive])
   @@index([price])
   @@index([createdAt])
+}
+
+model ProductReview {
+  id String @id @default(uuid())
+
+  productId String
+  customerId String
+  orderId String?
+
+  rating Int
+  comment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+  customer User @relation(fields: [customerId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@unique([productId, customerId])
+  @@index([productId])
+  @@index([customerId])
+}
+
+model SellerReview {
+  id String @id @default(uuid())
+
+  sellerId String
+  customerId String
+  orderId String?
+
+  rating Int
+  comment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  seller User @relation("SellerReviewsReceived", fields: [sellerId], references: [id])
+  customer User @relation("SellerReviewsGiven", fields: [customerId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@unique([sellerId, customerId, orderId])
+  @@index([sellerId])
+  @@index([customerId])
 }
 
 model Financing {
@@ -251,6 +309,8 @@ model Order {
   customer            User        @relation(fields: [customerId], references: [id])
   items               OrderItem[]
   shipments           Shipment[]
+  productReviews      ProductReview[]
+  sellerReviews       SellerReview[]
 }
 
 model OrderItem {

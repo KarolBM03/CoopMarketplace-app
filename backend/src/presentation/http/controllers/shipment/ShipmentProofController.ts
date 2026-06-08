@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import { SubmitShipmentProofUseCase } from "../../../../application/use-cases/shipment/SubmitShipmentProofUseCase";
 import { uploadImageToCloudinary } from "../../../../infrastructure/external-services/upload.service";
+import { GetShipmentProofsUseCase } from "../../../../application/use-cases/shipment/GetShipmentProofsUseCase";
 
 export const submitShipmentProofController = async (
   req: AuthRequest,
@@ -50,6 +51,23 @@ export const submitShipmentProofController = async (
   } catch (error: any) {
     res.status(400).json({
       message: error.message || "No pude guardar la entrega",
+    });
+  }
+};
+
+export const getShipmentProofsController = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const useCase = new GetShipmentProofsUseCase();
+
+    const proofs = await useCase.execute();
+
+    res.json(proofs);
+  } catch (error: any) {
+    res.status(400).json({
+      message: error.message || "No pude cargar las evidencias",
     });
   }
 };

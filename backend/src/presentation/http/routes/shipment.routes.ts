@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { protect } from "../middlewares/auth.middleware";
+import { upload } from "../middlewares/upload.middleware";
 import { authorize } from "../middlewares/role.middleware";
 import { allowSelfOrAdmin } from "../middlewares/ownership.middleware";
 import { ShipmentControllerV2 } from "../controllers/shipment/ShipmentControllerV2";
-import { submitShipmentProofController } from "../controllers/shipment/ShipmentProofController";
+import {
+  submitShipmentProofController,
+  getShipmentProofsController,
+} from "../controllers/shipment/ShipmentProofController";
 
 const router = Router();
 const controller = new ShipmentControllerV2();
@@ -26,6 +30,15 @@ router.post(
   authorize("SELLER", "ADMIN"),
   controller.createShipment,
 );
+router.post(
+  "/:shipmentId/proof",
+  authorize("SELLER", "ADMIN"),
+  upload.fields([
+    { name: "customerPhoto", maxCount: 1 },
+    { name: "productPhoto", maxCount: 1 },
+  ]),
+  submitShipmentProofController,
+);
 router.patch(
   "/:shipmentId/status",
   authorize("SELLER", "ADMIN"),
@@ -46,6 +59,9 @@ router.patch(
   authorize("SELLER", "ADMIN"),
   controller.stopTracking,
 );
+
+router.get("/proofs/admin", authorize("ADMIN"), getShipmentProofsController);
+
 router.post(
   "/:shipmentId/proof",
   protect,

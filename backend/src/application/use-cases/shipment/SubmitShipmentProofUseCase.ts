@@ -115,6 +115,17 @@ export class SubmitShipmentProofUseCase {
       },
     });
 
+    await prisma.user.update({
+      where: {
+        id: shipment.sellerId,
+      },
+      data: {
+        deliveryScore: {
+          increment: 1,
+        },
+      },
+    });
+
     await prisma.shipment.update({
       where: { id: data.shipmentId },
       data: {

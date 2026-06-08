@@ -50,15 +50,36 @@ export const updateShipmentLocation = async (
   lat: number,
   lng: number,
 ) => {
-  const response = await api.patch(`/shipments/${shipmentId}/tracking/location`, {
-    lat,
-    lng,
-  });
+  const response = await api.patch(
+    `/shipments/${shipmentId}/tracking/location`,
+    {
+      lat,
+      lng,
+    },
+  );
 
   return response.data;
 };
 
 export const stopShipmentTracking = async (shipmentId: string) => {
   const response = await api.patch(`/shipments/${shipmentId}/tracking/stop`);
+  return response.data;
+};
+
+export const submitShipmentProof = async (
+  shipmentId: string,
+  data: FormData,
+) => {
+  const response = await api.post(`/shipments/${shipmentId}/proof`, data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return response.data;
+};
+
+export const getAdminShipmentProofs = async () => {
+  const response = await api.get("/shipments/proofs/admin");
   return response.data;
 };

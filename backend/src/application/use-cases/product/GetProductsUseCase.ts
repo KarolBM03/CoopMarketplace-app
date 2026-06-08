@@ -11,7 +11,7 @@ export class GetProductsUseCase {
       category = "",
       minPrice,
       maxPrice,
-      sort = "newest",
+      sort = "relevance",
     } = params;
 
     const where: any = {
@@ -42,12 +42,20 @@ export class GetProductsUseCase {
         : sort === "price_desc"
           ? [{ price: "desc" as const }]
           : sort === "best_selling"
-            ? [{ salesCount: "desc" as const }, { rankingScore: "desc" as const }]
+            ? [
+                { salesCount: "desc" as const },
+                { rankingScore: "desc" as const },
+              ]
             : sort === "most_viewed"
               ? [{ views: "desc" as const }, { rankingScore: "desc" as const }]
               : sort === "financed"
-                ? [{ isFinanced: "desc" as const }, { rankingScore: "desc" as const }]
-                : sort === "relevance" || sort === "trending" || sort === "recommended"
+                ? [
+                    { isFinanced: "desc" as const },
+                    { rankingScore: "desc" as const },
+                  ]
+                : sort === "relevance" ||
+                    sort === "trending" ||
+                    sort === "recommended"
                   ? [
                       { rankingScore: "desc" as const },
                       { salesCount: "desc" as const },
@@ -75,6 +83,3 @@ export class GetProductsUseCase {
     };
   }
 }
-
-
-

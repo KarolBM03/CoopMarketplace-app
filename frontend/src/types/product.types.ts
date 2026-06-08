@@ -7,6 +7,9 @@ export interface Product {
   imageUrl?: string;
   isFinanced: boolean;
   isActive?: boolean;
+  ratingAverage?: number;
+  ratingCount?: number;
+  rankingScore?: number;
   category: string;
   sellerId?: string;
 

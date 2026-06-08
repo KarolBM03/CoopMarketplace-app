@@ -31,14 +31,23 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   async findById(id: string): Promise<Product | null> {
-    return await prisma.product.findUnique({
+    return (await prisma.product.findUnique({
       where: { id },
       include: {
-        seller: {
-          select: this.sellerSummary,
+        reviews: {
+          include: {
+            customer: {
+              select: {
+                fullName: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
         },
       },
-    });
+    })) as any;
   }
 
   async findMany(params: any): Promise<{ products: Product[]; total: number }> {
@@ -51,11 +60,6 @@ export class PrismaProductRepository implements ProductRepository {
         skip,
         take: limit,
         orderBy,
-        include: {
-          seller: {
-            select: this.sellerSummary,
-          },
-        },
       }),
       prisma.product.count({ where }),
     ]);
@@ -64,13 +68,7 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   async update(id: string, data: Partial<Product>): Promise<Product> {
-    const {
-      id: _id,
-      seller,
-      createdAt,
-      updatedAt,
-      ...updateData
-    } = data;
+    const { id: _id, seller, createdAt, updatedAt, ...updateData } = data;
 
     return await prisma.product.update({
       where: { id },
@@ -114,6 +112,3 @@ export class PrismaProductRepository implements ProductRepository {
     });
   }
 }
-
-
-

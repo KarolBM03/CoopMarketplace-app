@@ -14,6 +14,11 @@ export const createOrder = async (customerId: string, items: OrderItem[]) => {
   return response.data;
 };
 
+export const getMyOrders = async () => {
+  const response = await api.get("/orders/customer/me");
+  return response.data;
+};
+
 export const getCustomerOrders = async (customerId: string) => {
   const response = await api.get(`/orders/customer/${customerId}`);
   return response.data;
@@ -29,6 +34,8 @@ export const getSellerSales = async (sellerId?: string) => {
 };
 
 export const getOrderCooperativePaymentLink = async (orderId: string) => {
-  const response = await api.post(`/orders/${orderId}/cooperative-payment-link`);
+  const response = await api.post(
+    `/orders/${orderId}/cooperative-payment-link`,
+  );
   return response.data as { paymentUrl: string };
 };
