@@ -10,6 +10,7 @@ import {
   Truck,
   Wallet,
   MessageCircle,
+  Heart,
 } from "lucide-react";
 import { socket } from "../../socket";
 import { useEffect, useState } from "react";
@@ -18,6 +19,7 @@ import { useAuthStore } from "../../store/auth.store";
 import { useCartStore } from "../../store/cart.store";
 import toast from "react-hot-toast";
 import { requestNotificationPermission } from "../../firebase/requestNotificationPermission";
+import { getMyFavorites } from "../../services/favorite.service";
 
 const navItems = [
   { to: "/customer", label: "Dashboard", icon: Home, end: true },
@@ -38,6 +40,7 @@ export default function CustomerLayout() {
   const user = useAuthStore.getState().user;
   const logout = useAuthStore.getState().logout;
   const [cartCount, setCartCount] = useState(getCartCount);
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const initials = user?.fullName
     ?.split(" ")
     .map((part) => part[0])
@@ -49,6 +52,19 @@ export default function CustomerLayout() {
     logout();
     navigate("/login");
   };
+
+  const loadFavoritesCount = async () => {
+    try {
+      const data = await getMyFavorites();
+      setFavoriteCount(data.length);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    loadFavoritesCount();
+  }, []);
 
   useEffect(() => {
     return useCartStore.subscribe((state) => {
@@ -122,6 +138,18 @@ export default function CustomerLayout() {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 sm:px-8">
             <div className="ml-auto flex items-center gap-4">
+              <Link
+                to="/customer/favorites"
+                className="relative grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                aria-label="Favoritos"
+              >
+                <Heart className="h-5 w-5" />
+
+                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-[10px] font-black text-white">
+                  {favoriteCount}
+                </span>
+              </Link>
+
               <Link
                 to="/cart"
                 className="relative grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"

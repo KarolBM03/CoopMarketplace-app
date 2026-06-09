@@ -16,6 +16,12 @@ router.patch("/users/:userId/block", controller.blockUser);
 router.patch("/users/:userId/unblock", controller.unblockUser);
 router.patch("/sellers/:userId/approve", controller.approveSeller);
 router.patch("/sellers/:userId/reject", controller.rejectSeller);
+router.patch(
+  "/fraud-alerts/:alertId/resolve",
+  protect,
+  authorize("ADMIN"),
+  controller.resolveFraudAlert,
+);
 router.get("/sellers", controller.sellers);
 
 export default router;

@@ -8,6 +8,7 @@ import { createAuditLog } from "./audit.service";
 export const getPlatformMetrics = async () => {
   const [
     users,
+    sellers,
     products,
     orders,
     paidOrders,
@@ -15,21 +16,58 @@ export const getPlatformMetrics = async () => {
     financings,
     activeFinancings,
     lateFinancings,
+    deliveredShipments,
+    reviews,
+    favorites,
     transactions,
     fraudAlerts,
   ] = await Promise.all([
     prisma.user.count(),
+
+    prisma.user.count({
+      where: {
+        role: "SELLER",
+        sellerStatus: "APPROVED",
+      },
+    }),
+
     prisma.product.count(),
+
     prisma.order.count(),
-    prisma.order.count({ where: { status: "PAID" } }),
-    prisma.order.count({ where: { status: "COMPLETED" } }),
+
+    prisma.order.count({
+      where: { status: "PAID" },
+    }),
+
+    prisma.order.count({
+      where: { status: "COMPLETED" },
+    }),
+
     prisma.financing.count(),
-    prisma.financing.count({ where: { status: "ACTIVE" } }),
-    prisma.financing.count({ where: { status: "LATE" } }),
+
+    prisma.financing.count({
+      where: { status: "ACTIVE" },
+    }),
+
+    prisma.financing.count({
+      where: { status: "LATE" },
+    }),
+
+    prisma.shipment.count({
+      where: {
+        status: "DELIVERED",
+      },
+    }),
+
+    prisma.productReview.count(),
+
+    prisma.favorite.count(),
+
     prisma.transaction.aggregate({
       _sum: { amount: true },
       where: { status: "SUCCESS" },
     }),
+
     prisma.fraudAlert.count({
       where: { resolved: false },
     }),
@@ -37,6 +75,7 @@ export const getPlatformMetrics = async () => {
 
   return {
     users,
+    sellers,
     products,
     orders,
     paidOrders,
@@ -44,6 +83,9 @@ export const getPlatformMetrics = async () => {
     financings,
     activeFinancings,
     lateFinancings,
+    deliveredShipments,
+    reviews,
+    favorites,
     totalTransactionAmount: transactions._sum.amount || 0,
     unresolvedFraudAlerts: fraudAlerts,
   };
@@ -202,6 +244,22 @@ export const getFraudAlerts = async () => {
   }));
 };
 
+export const resolveFraudAlert = async (alertId: string) => {
+  const alert = await prisma.fraudAlert.update({
+    where: {
+      id: alertId,
+    },
+    data: {
+      resolved: true,
+    },
+  });
+
+  return {
+    message: "Alerta resuelta",
+    alert,
+  };
+};
+
 export const blockUser = async (userId: string, actorId?: string) => {
   const user = await prisma.user.update({
     where: {
@@ -314,6 +372,3 @@ export const getSellers = async () => {
     },
   });
 };
-
-
-

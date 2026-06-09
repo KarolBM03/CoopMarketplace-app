@@ -7,8 +7,6 @@ export interface AdminRepository {
   unblockUser(userId: string, actorId?: string): Promise<any>;
   approveSeller(userId: string, actorId?: string): Promise<any>;
   rejectSeller(userId: string, actorId?: string): Promise<any>;
+  resolveFraudAlert(alertId: string): Promise<any>;
   getSellers(): Promise<any>;
 }
-
-
-

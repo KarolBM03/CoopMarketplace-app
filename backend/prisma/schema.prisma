@@ -52,6 +52,7 @@ model User {
   updatedAt     DateTime       @updatedAt
 
   productReviews ProductReview[]
+  favorites Favorite[]
 
   sellerReviewsReceived SellerReview[] @relation("SellerReviewsReceived")
   sellerReviewsGiven SellerReview[] @relation("SellerReviewsGiven")
@@ -83,6 +84,7 @@ model Product {
   isActive     Boolean     @default(true)
   financings   Financing[]
   orderItems   OrderItem[]
+  favorites Favorite[]
   views        Int         @default(0)
   salesCount   Int         @default(0)
   rankingScore Float       @default(0)
@@ -123,6 +125,20 @@ model ProductReview {
   @@unique([productId, customerId])
   @@index([productId])
   @@index([customerId])
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+
+  customerId String
+  productId  String
+
+  createdAt DateTime @default(now())
+
+  customer User @relation(fields: [customerId], references: [id])
+  product  Product @relation(fields: [productId], references: [id])
+
+  @@unique([customerId, productId])
 }
 
 model SellerReview {

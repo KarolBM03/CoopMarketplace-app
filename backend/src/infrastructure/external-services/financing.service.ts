@@ -2,6 +2,7 @@ import prisma from "../database/prisma";
 import { FinancingStatus } from "@prisma/client";
 import { createNotification } from "../external-services/notification.service";
 import { createAuditLog } from "./audit.service";
+import { analyzeFinancingRisk } from "./fraud.service";
 import {
   createPaymentLink,
   isCooperativeConfigured,
@@ -67,15 +68,21 @@ export const createFinancing = async ({
       requestedAmount: totalAmount,
       requestedMonths: months,
       requestedMonthlyPayment: monthlyPayment,
-      status: coopEnabled ? FinancingStatus.SENT_TO_COOPERATIVE : FinancingStatus.PENDING,
+      status: coopEnabled
+        ? FinancingStatus.SENT_TO_COOPERATIVE
+        : FinancingStatus.PENDING,
       sentToCooperativeAt: coopEnabled ? new Date() : null,
-      externalStatus: coopEnabled ? "SENT_TO_COOPERATIVE" : "LOCAL_PENDING_REVIEW",
+      externalStatus: coopEnabled
+        ? "SENT_TO_COOPERATIVE"
+        : "LOCAL_PENDING_REVIEW",
     },
     include: {
       customer: true,
       product: true,
     },
   });
+
+  await analyzeFinancingRisk(customerId, Number(totalAmount));
 
   const cooperativeResponse = coopEnabled
     ? await sendLoanApplication({
@@ -84,15 +91,20 @@ export const createFinancing = async ({
     : {
         success: true,
         status: "LOCAL_PENDING_REVIEW",
-        message: "Solicitud registrada en modo local. Configura COOP_API_URL y COOP_API_KEY para integracion real.",
+        message:
+          "Solicitud registrada en modo local. Configura COOP_API_URL y COOP_API_KEY para integracion real.",
         simulated: true,
       };
 
   const updatedFinancing = await prisma.financing.update({
     where: { id: financing.id },
     data: {
-      externalLoanId: coopEnabled ? (cooperativeResponse as any).externalLoanId : null,
-      externalReference: coopEnabled ? (cooperativeResponse as any).externalReference : null,
+      externalLoanId: coopEnabled
+        ? (cooperativeResponse as any).externalLoanId
+        : null,
+      externalReference: coopEnabled
+        ? (cooperativeResponse as any).externalReference
+        : null,
       externalStatus: cooperativeResponse.status || "SENT_TO_COOPERATIVE",
       cooperativeResponse,
     },
@@ -107,7 +119,9 @@ export const createFinancing = async ({
 
   await createNotification(
     customerId,
-    coopEnabled ? "Solicitud enviada a CoopHispanica" : "Solicitud de financiamiento registrada",
+    coopEnabled
+      ? "Solicitud enviada a CoopHispanica"
+      : "Solicitud de financiamiento registrada",
     coopEnabled
       ? `Tu solicitud para ${product.title} fue enviada a CoopHispanica.`
       : `Tu solicitud para ${product.title} fue registrada y queda pendiente de revision.`,
@@ -219,9 +233,9 @@ export const approveByCooperative = async (
   }
 
   const approvableStatuses: FinancingStatus[] = [
-      FinancingStatus.SENT_TO_COOPERATIVE,
-      FinancingStatus.UNDER_REVIEW,
-      FinancingStatus.PENDING,
+    FinancingStatus.SENT_TO_COOPERATIVE,
+    FinancingStatus.UNDER_REVIEW,
+    FinancingStatus.PENDING,
   ];
 
   if (!approvableStatuses.includes(financing.status)) {
@@ -435,9 +449,9 @@ export const getCooperativePaymentLink = async (financingId: string) => {
   }
 
   const payableStatuses: FinancingStatus[] = [
-      FinancingStatus.WAITING_COOPERATIVE_PAYMENT,
-      FinancingStatus.CUSTOMER_ACCEPTED,
-      FinancingStatus.APPROVED_BY_COOPERATIVE,
+    FinancingStatus.WAITING_COOPERATIVE_PAYMENT,
+    FinancingStatus.CUSTOMER_ACCEPTED,
+    FinancingStatus.APPROVED_BY_COOPERATIVE,
   ];
 
   if (!payableStatuses.includes(financing.status)) {
@@ -456,7 +470,8 @@ export const getCooperativePaymentLink = async (financingId: string) => {
   await prisma.financing.update({
     where: { id: financing.id },
     data: {
-      externalReference: result.externalPaymentId || financing.externalReference,
+      externalReference:
+        result.externalPaymentId || financing.externalReference,
       externalStatus: result.status || "PAYMENT_LINK_CREATED",
     },
   });
@@ -525,6 +540,3 @@ export const confirmCooperativePayment = async ({
 
   return updatedFinancing;
 };
-
-
-

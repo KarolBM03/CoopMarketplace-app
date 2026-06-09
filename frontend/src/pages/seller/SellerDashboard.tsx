@@ -2,8 +2,11 @@ import {
   BarChart3,
   Bell,
   ExternalLink,
+  Heart,
   Package,
   ShoppingBag,
+  Star,
+  Trophy,
   Wallet,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -47,6 +50,31 @@ export default function SellerDashboard() {
     (sum, sale) => sum + sale.price * sale.quantity,
     0,
   );
+
+  const totalFavorites = products.reduce(
+    (sum, product) => sum + (product.favorites?.length || 0),
+    0,
+  );
+
+  const ratedProducts = products.filter(
+    (product) => product.ratingCount && product.ratingCount > 0,
+  );
+
+  const averageRating =
+    ratedProducts.length > 0
+      ? ratedProducts.reduce(
+          (sum, product) => sum + (product.ratingAverage || 0),
+          0,
+        ) / ratedProducts.length
+      : 0;
+
+  const topProduct = [...products].sort(
+    (a, b) => (b.salesCount || 0) - (a.salesCount || 0),
+  )[0];
+
+  const bestRatedProduct = [...products]
+    .filter((product) => product.ratingCount && product.ratingCount > 0)
+    .sort((a, b) => (b.ratingAverage || 0) - (a.ratingAverage || 0))[0];
 
   return (
     <div className="px-5 py-8 sm:px-8 lg:px-10">
@@ -97,6 +125,37 @@ export default function SellerDashboard() {
             detail="Alertas recientes de tu cuenta"
             icon={Bell}
             to="/seller/notifications"
+          />
+        </div>
+
+        <div className="mt-6 grid gap-6 md:grid-cols-2 2xl:grid-cols-4">
+          <SummaryCard
+            title="Calificación promedio"
+            value={averageRating ? averageRating.toFixed(1) : "0.0"}
+            detail={`${ratedProducts.length} productos con opiniones`}
+            icon={Star}
+            highlight
+          />
+
+          <SummaryCard
+            title="Favoritos recibidos"
+            value={String(totalFavorites)}
+            detail="Productos guardados por clientes"
+            icon={Heart}
+          />
+
+          <SummaryCard
+            title="Más vendido"
+            value={String(topProduct?.salesCount || 0)}
+            detail={topProduct?.title || "Sin ventas"}
+            icon={Trophy}
+          />
+
+          <SummaryCard
+            title="Mejor valorado"
+            value={bestRatedProduct?.ratingAverage?.toFixed(1) || "0.0"}
+            detail={bestRatedProduct?.title || "Sin opiniones"}
+            icon={Star}
           />
         </div>
       </section>
@@ -234,7 +293,8 @@ function SummaryCard({
 
       <p className="mt-8 text-sm font-bold text-slate-500">{title}</p>
       <h2
-        className={`mt-3 break-words text-[clamp(1.9rem,2.6vw,2.8rem)] font-black leading-none ${valueClass}`}
+        className={`mt-3 line-clamp-2 text-2xl font-black leading-tight ${valueClass}`}
+        title={value}
       >
         {value}
       </h2>

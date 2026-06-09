@@ -28,6 +28,12 @@ export const getFraudAlerts = async () => {
   return response.data;
 };
 
+export const resolveFraudAlert = async (alertId: string) => {
+  const response = await api.patch(`/admin/fraud-alerts/${alertId}/resolve`);
+
+  return response.data;
+};
+
 export const getAdminUsers = async () => {
   const response = await api.get("/admin/users");
   return response.data;

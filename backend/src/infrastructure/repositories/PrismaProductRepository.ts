@@ -108,6 +108,7 @@ export class PrismaProductRepository implements ProductRepository {
         seller: {
           select: this.sellerSummary,
         },
+        favorites: true,
       },
     });
   }

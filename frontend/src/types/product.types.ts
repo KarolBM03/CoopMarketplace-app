@@ -11,6 +11,7 @@ export interface Product {
   ratingCount?: number;
   rankingScore?: number;
   category: string;
+  favorites?: any[];
   sellerId?: string;
 
   seller?: {

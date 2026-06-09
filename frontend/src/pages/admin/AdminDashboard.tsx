@@ -8,6 +8,10 @@ import {
   ShieldCheck,
   Users,
   Wallet,
+  Heart,
+  Star,
+  Store,
+  Truck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -65,6 +69,14 @@ export default function AdminDashboard() {
       value: metrics.unresolvedFraudAlerts,
       icon: AlertTriangle,
     },
+    { title: "Vendedores", value: metrics.sellers || 0, icon: Store },
+    {
+      title: "Envíos entregados",
+      value: metrics.deliveredShipments || 0,
+      icon: Truck,
+    },
+    { title: "Opiniones", value: metrics.reviews || 0, icon: Star },
+    { title: "Favoritos", value: metrics.favorites || 0, icon: Heart },
   ];
 
   return (
@@ -235,8 +247,3 @@ function FinanceCard({
     </div>
   );
 }
-
-
-
-
-

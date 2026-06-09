@@ -33,6 +33,7 @@ import CustomerShipmentsPage from "../pages/customer/CustomerShipments";
 import ChatPage from "../pages/chat/ChatPage";
 import AdminChatAuditPage from "../pages/admin/AdminChatPage";
 import AdminDeliveryProofsPage from "../pages/admin/AdminDeliveryProofsPage";
+import FavoritesPage from "../pages/customer/FavoritesPage";
 
 export default function AppRoutes() {
   return (
@@ -90,6 +91,7 @@ export default function AppRoutes() {
           <Route path="financing" element={<CustomerFinancingPage />} />
           <Route path="wallet" element={<CustomerWalletPage />} />
           <Route path="notifications" element={<CustomerNotificationsPage />} />
+          <Route path="favorites" element={<FavoritesPage />} />
           <Route
             path="/customer/shipments"
             element={<CustomerShipmentsPage />}

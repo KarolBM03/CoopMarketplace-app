@@ -9,6 +9,7 @@ import {
   getUsers,
   rejectSeller,
   unblockUser,
+  resolveFraudAlert,
 } from "../external-services/admin.service";
 
 export class LegacyAdminRepository implements AdminRepository {
@@ -22,6 +23,10 @@ export class LegacyAdminRepository implements AdminRepository {
 
   getFraudAlerts() {
     return getFraudAlerts();
+  }
+
+  resolveFraudAlert(alertId: string) {
+    return resolveFraudAlert(alertId);
   }
 
   getUsers() {
@@ -48,6 +53,3 @@ export class LegacyAdminRepository implements AdminRepository {
     return getSellers();
   }
 }
-
-
-

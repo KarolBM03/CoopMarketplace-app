@@ -1,7 +1,6 @@
 import {
   ChevronLeft,
   ChevronRight,
-  CreditCard,
   Eye,
   Flame,
   Search,
@@ -16,6 +15,8 @@ import { useLocation } from "react-router-dom";
 import ProductCard from "../../components/product/ProductCard";
 import { getProducts } from "../../services/product.services";
 import type { Product } from "../../types/product.types";
+import { getMyFavorites } from "../../services/favorite.service";
+import { useAuthStore } from "../../store/auth.store";
 
 const categories = [
   "Todos",
@@ -65,6 +66,8 @@ export default function MarketplacePage() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const user = useAuthStore.getState().user;
+  const [favoriteIds, setFavoritesIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -79,6 +82,20 @@ export default function MarketplacePage() {
     () => (maxPrice ? Number(maxPrice) : undefined),
     [maxPrice],
   );
+
+  const loadFavorites = async () => {
+    if (!user || user.role !== "CUSTOMER") return;
+
+    try {
+      const data = await getMyFavorites();
+      setFavoritesIds(data.map((item: any) => item.productId));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    loadFavorites();
+  }, []);
 
   useEffect(() => {
     setPage(1);
@@ -275,7 +292,11 @@ export default function MarketplacePage() {
                 key={product.id}
                 className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
-                <ProductCard product={product} />
+                <ProductCard
+                  product={product}
+                  isFavorite={favoriteIds.includes(product.id)}
+                  onFavoriteChange={loadFavorites}
+                />
               </div>
             ))}
           </div>
