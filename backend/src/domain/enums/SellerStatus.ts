@@ -3,6 +3,3 @@ export enum SellerStatus {
   APPROVED = "APPROVED",
   REJECTED = "REJECTED",
 }
-
-
-

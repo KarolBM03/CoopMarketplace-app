@@ -13,18 +13,35 @@ import {
   Store,
   Truck,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 import { useEffect, useState } from "react";
 import {
   getDashboardMetrics,
   getAdminFinancialReport,
   getFraudAlerts,
+  resolveFraudAlert,
+  getTopProducts,
+  getTopSellers,
+  getFinancingChart,
 } from "../../services/admin.services";
+import { getSalesChart } from "../../services/admin.services";
 import toast from "react-hot-toast";
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<any>(null);
   const [report, setReport] = useState<any>(null);
   const [fraudAlerts, setFraudAlerts] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [topSellers, setTopSellers] = useState<any[]>([]);
+  const [salesChart, setSalesChart] = useState<any[]>([]);
+  const [financingChart, setFinancingChart] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -35,12 +52,34 @@ export default function AdminDashboard() {
       const metricsData = await getDashboardMetrics();
       const reportData = await getAdminFinancialReport();
       const fraudData = await getFraudAlerts();
+      const topProductsData = await getTopProducts();
+      const topSellersaData = await getTopSellers();
+      const salesChartData = await getSalesChart();
+      const financingChartData = await getFinancingChart();
 
       setFraudAlerts(Array.isArray(fraudData) ? fraudData : []);
       setMetrics(metricsData);
       setReport(reportData);
+      setTopProducts(Array.isArray(topProductsData) ? topProductsData : []);
+      setTopSellers(Array.isArray(topSellersaData) ? topSellersaData : []);
+      setSalesChart(Array.isArray(salesChartData) ? salesChartData : []);
+      setFinancingChart(
+        Array.isArray(financingChartData) ? financingChartData : [],
+      );
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error cargando dashboard");
+    }
+  };
+
+  const handleResolveAlert = async (alertId: string) => {
+    try {
+      await resolveFraudAlert(alertId);
+      toast.success("Alerta resuelta");
+      loadData();
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "No pude resolver la alerta",
+      );
     }
   };
 
@@ -209,10 +248,130 @@ export default function AdminDashboard() {
                   <p className="text-sm text-slate-500">
                     {new Date(alert.createdAt).toLocaleDateString()}
                   </p>
+
+                  <button
+                    onClick={() => handleResolveAlert(alert.id)}
+                    className="mt-3 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-500"
+                  >
+                    Resolver
+                  </button>
                 </div>
               </div>
             ))
           )}
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-black text-slate-950">Top productos</h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Productos más vendidos del marketplace.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {topProducts.map((product, index) => (
+            <div
+              key={product.id}
+              className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4"
+            >
+              <div>
+                <p className="font-black text-slate-950">
+                  #{index + 1} {product.title}
+                </p>
+
+                <p className="text-sm text-slate-500">
+                  {product.salesCount} ventas
+                </p>
+              </div>
+
+              <span className="font-black text-emerald-600">
+                RD${product.price.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">Top vendedores</h2>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Vendedores con más ventas registradas.
+          </p>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {topSellers.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm font-semibold text-slate-500">
+              Todavía no hay vendedores con ventas.
+            </div>
+          ) : (
+            topSellers.map((seller, index) => (
+              <div
+                key={seller.id}
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4"
+              >
+                <div>
+                  <p className="font-black text-slate-950">
+                    #{index + 1} {seller.fullName}
+                  </p>
+
+                  <p className="text-sm text-slate-500">
+                    {seller.totalSales} ventas registradas
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-700">
+                  Top seller
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">Ventas por mes</h2>
+        </div>
+
+        <div className="mt-8 h-[350px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={salesChart}>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+
+              <Bar dataKey="sales" radius={[8, 8, 0, 0]} fill="#10b981" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">
+            Financiamientos por mes
+          </h2>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Cantidad de solicitudes creadas durante el año.
+          </p>
+        </div>
+
+        <div className="mt-8 h-[350px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={financingChart}>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+
+              <Bar dataKey="financings" radius={[8, 8, 0, 0]} fill="#6366f1" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </section>
     </div>

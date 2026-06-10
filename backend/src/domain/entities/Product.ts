@@ -13,6 +13,8 @@ export interface Product {
   views: number;
   salesCount: number;
   rankingScore: number;
+  ratingAverage?: number | null;
+  ratingCount?: number | null;
   createdAt: Date;
   updatedAt: Date;
   seller?: {

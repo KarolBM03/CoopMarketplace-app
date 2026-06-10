@@ -39,6 +39,26 @@ export const getAdminUsers = async () => {
   return response.data;
 };
 
+export const getTopProducts = async () => {
+  const response = await api.get("/admin/top-products");
+  return response.data;
+};
+
+export const getTopSellers = async () => {
+  const response = await api.get("/admin/top-sellers");
+  return response.data;
+};
+
+export const getSalesChart = async () => {
+  const response = await api.get("/admin/sales-chart");
+  return response.data;
+};
+
+export const getFinancingChart = async () => {
+  const response = await api.get("/admin/financing-chart");
+  return response.data;
+};
+
 export const blockUser = async (userId: string) => {
   const response = await api.patch(`/admin/users/${userId}/block`);
 

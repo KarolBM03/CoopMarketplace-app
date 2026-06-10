@@ -57,6 +57,9 @@ export const generateFinancialPDF = (report: any) => {
     ["Transacciones", report.counts?.transactions || 0],
     ["Financiamientos", report.counts?.financings || 0],
     ["Fraudes", report.counts?.fraudAlerts || 0],
+    ["Ventas completadas", report.counts?.completedOrders || 0],
+    ["Productos vendidos", report.counts?.productsSold || 0],
+    ["Usuarios registrados", report.counts?.users || 0],
   ];
 
   let statX = 50;

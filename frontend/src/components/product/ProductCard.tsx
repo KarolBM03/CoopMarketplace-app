@@ -1,5 +1,4 @@
 import { Heart, Star } from "lucide-react";
-import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation } from "react-router-dom";
 import { addFavorite, removeFavorite } from "../../services/favorite.service";

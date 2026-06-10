@@ -12,6 +12,9 @@ export interface FinancialReport {
     transactions: number;
     financings: number;
     fraudAlerts: number;
+    completedOrders: number;
+    productsSold: number;
+    users: number;
   };
 }
 

@@ -3,17 +3,39 @@ import {
   getFinancialReport,
   downloadFinancialReportPDF,
   downloadFinancialExcel,
+  getFinancingChart,
+  getSalesChart,
 } from "../../services/admin.services";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Line,
+  LineChart,
+} from "recharts";
 
 export default function AdminReportsPage() {
   const [report, setReport] = useState<any>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [salesChart, setSalesChart] = useState<any[]>([]);
+  const [financingChart, setFinancingChart] = useState<any[]>([]);
 
   const loadReport = async () => {
     try {
       const data = await getFinancialReport(startDate, endDate);
       setReport(data);
+
+      const [salesData, financingData] = await Promise.all([
+        getSalesChart(),
+        getFinancingChart(),
+      ]);
+
+      setSalesChart(Array.isArray(salesData) ? salesData : []);
+      setFinancingChart(Array.isArray(financingData) ? financingData : []);
     } catch (error) {
       console.log(error);
       setReport({
@@ -110,6 +132,12 @@ export default function AdminReportsPage() {
           value={`RD$${(totals.financingTotal || 0).toLocaleString()}`}
         />
         <Card title="Alertas fraude" value={counts.fraudAlerts || 0} />
+
+        <Card title="Ventas completadas" value={counts.completedOrders || 0} />
+
+        <Card title="Productos vendidos" value={counts.productsSold || 0} />
+
+        <Card title="Usuarios registrados" value={counts.users || 0} />
       </div>
 
       <div className="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -119,6 +147,37 @@ export default function AdminReportsPage() {
           <Stat label="Transacciones" value={counts.transactions || 0} />
           <Stat label="Financiamientos" value={counts.financings || 0} />
           <Stat label="Fraudes detectados" value={counts.fraudAlerts || 0} />
+        </div>
+
+        <div className="mt-8 h-[350px]">
+          <h2 className="text-xl font-black text-slate-950">Ventas</h2>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={salesChart}>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+
+              <Bar dataKey="sales" fill="#10b981" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="mt-8 h-[350px]">
+          <h2 className="text-xl font-black text-slate-950">Financiamientos</h2>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={financingChart}>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+
+              <Line
+                type="monotone"
+                dataKey="financings"
+                stroke="#6366f1"
+                strokeWidth={3}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

@@ -70,6 +70,24 @@ export const generateFinancialExcel = async (report: any) => {
       "Cantidad",
       generatedAt,
     ],
+    [
+      "Ventas completadas",
+      report.counts?.completedOrders || 0,
+      "Cantidad",
+      generatedAt,
+    ],
+    [
+      "Productos vendidos",
+      report.counts?.productsSold || 0,
+      "Cantidad",
+      generatedAt,
+    ],
+    [
+      "Usuarios registrados",
+      report.counts?.users || 0,
+      "Cantidad",
+      generatedAt,
+    ],
   ];
 
   rows.forEach((row) => sheet.addRow(row));

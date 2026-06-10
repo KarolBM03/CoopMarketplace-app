@@ -3,6 +3,10 @@ export interface AdminRepository {
   getFinancialReport(): Promise<any>;
   getFraudAlerts(): Promise<any>;
   getUsers(): Promise<any>;
+  getTopProducts(): Promise<any>;
+  getTopSellers(): Promise<any>;
+  getSalesChart(): Promise<any>;
+  getFinancingChart(): Promise<any>;
   blockUser(userId: string, actorId?: string): Promise<any>;
   unblockUser(userId: string, actorId?: string): Promise<any>;
   approveSeller(userId: string, actorId?: string): Promise<any>;

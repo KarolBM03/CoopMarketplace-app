@@ -1,3 +1,4 @@
+import { OrderStatus } from "@prisma/client";
 import prisma from "../database/prisma";
 
 interface ReportFilters {
@@ -5,31 +6,72 @@ interface ReportFilters {
   endDate?: string;
 }
 
+const buildCreatedAtFilter = ({ startDate, endDate }: ReportFilters) => {
+  if (!startDate && !endDate) return {};
+
+  return {
+    ...(startDate ? { gte: new Date(startDate) } : {}),
+    ...(endDate ? { lte: new Date(endDate) } : {}),
+  };
+};
+
+const roundMoney = (value: number) => Math.round(value * 100) / 100;
+
 export const generateFinancialReport = async ({
   startDate,
   endDate,
 }: ReportFilters) => {
-  const dateFilter =
-    startDate && endDate
-      ? {
-          createdAt: {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
+  const createdAtFilter = buildCreatedAtFilter({ startDate, endDate });
+  const dateFilter = Object.keys(createdAtFilter).length
+    ? { createdAt: createdAtFilter }
+    : {};
+  const completedOrderStatuses: OrderStatus[] = [
+    OrderStatus.COMPLETED,
+    OrderStatus.DELIVERED,
+  ];
+
+  const [
+    transactions,
+    financings,
+    fraudAlerts,
+    completedOrders,
+    productsSold,
+    users,
+  ] = await Promise.all([
+    prisma.transaction.findMany({
+      where: dateFilter,
+    }),
+    prisma.financing.findMany({
+      where: dateFilter,
+    }),
+    prisma.fraudAlert.findMany({
+      where: dateFilter,
+    }),
+    prisma.order.count({
+      where: {
+        ...dateFilter,
+        status: {
+          in: completedOrderStatuses,
+        },
+      },
+    }),
+    prisma.orderItem.aggregate({
+      _sum: {
+        quantity: true,
+      },
+      where: {
+        order: {
+          ...dateFilter,
+          status: {
+            in: completedOrderStatuses,
           },
-        }
-      : {};
-
-  const transactions = await prisma.transaction.findMany({
-    where: dateFilter,
-  });
-
-  const financings = await prisma.financing.findMany({
-    where: dateFilter,
-  });
-
-  const fraudAlerts = await prisma.fraudAlert.findMany({
-    where: dateFilter,
-  });
+        },
+      },
+    }),
+    prisma.user.count({
+      where: dateFilter,
+    }),
+  ]);
 
   const payments = transactions
     .filter((transaction) => transaction.type === "PAYMENT")
@@ -51,15 +93,18 @@ export const generateFinancialReport = async ({
     },
 
     totals: {
-      payments,
-      deposits,
-      financingTotal,
+      payments: roundMoney(payments),
+      deposits: roundMoney(deposits),
+      financingTotal: roundMoney(financingTotal),
     },
 
     counts: {
       transactions: transactions.length,
       financings: financings.length,
       fraudAlerts: fraudAlerts.length,
+      completedOrders,
+      productsSold: productsSold._sum?.quantity || 0,
+      users,
     },
   };
 };

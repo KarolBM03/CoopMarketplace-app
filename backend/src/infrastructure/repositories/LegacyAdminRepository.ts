@@ -6,15 +6,35 @@ import {
   getFraudAlerts,
   getPlatformMetrics,
   getSellers,
+  getTopProducts,
+  getTopSellers,
   getUsers,
   rejectSeller,
   unblockUser,
   resolveFraudAlert,
+  getSalesChart,
+  getFinancingChart,
 } from "../external-services/admin.service";
 
 export class LegacyAdminRepository implements AdminRepository {
   getMetrics() {
     return getPlatformMetrics();
+  }
+
+  getTopProducts() {
+    return getTopProducts();
+  }
+
+  getTopSellers() {
+    return getTopSellers();
+  }
+
+  getSalesChart() {
+    return getSalesChart();
+  }
+
+  getFinancingChart() {
+    return getFinancingChart();
   }
 
   getFinancialReport() {

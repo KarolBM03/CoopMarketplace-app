@@ -12,6 +12,20 @@ router.get("/metrics", controller.metrics);
 router.get("/financial-report", controller.financialReport);
 router.get("/fraud-alerts", controller.fraudAlerts);
 router.get("/users", controller.users);
+router.get(
+  "/top-products",
+  protect,
+  authorize("ADMIN"),
+  controller.topProducts,
+);
+router.get("/top-sellers", protect, authorize("ADMIN"), controller.topSellers);
+router.get("/sales-chart", protect, authorize("ADMIN"), controller.salesChart);
+router.get(
+  "/financing-chart",
+  protect,
+  authorize("ADMIN"),
+  controller.financingChart,
+);
 router.patch("/users/:userId/block", controller.blockUser);
 router.patch("/users/:userId/unblock", controller.unblockUser);
 router.patch("/sellers/:userId/approve", controller.approveSeller);

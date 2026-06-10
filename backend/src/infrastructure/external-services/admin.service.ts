@@ -91,6 +91,61 @@ export const getPlatformMetrics = async () => {
   };
 };
 
+export const getTopProducts = async () => {
+  return await prisma.product.findMany({
+    where: {
+      isActive: true,
+    },
+    orderBy: [
+      {
+        salesCount: "desc",
+      },
+      {
+        rankingScore: "desc",
+      },
+    ],
+    take: 5,
+    select: {
+      id: true,
+      title: true,
+      imageUrl: true,
+      price: true,
+      salesCount: true,
+      ratingAverage: true,
+      ratingCount: true,
+      rankingScore: true,
+    },
+  });
+};
+
+export const getTopSellers = async () => {
+  const sellers = await prisma.user.findMany({
+    where: {
+      role: "SELLER",
+      sellerStatus: "APPROVED",
+    },
+    include: {
+      products: {
+        select: {
+          salesCount: true,
+        },
+      },
+    },
+  });
+
+  return sellers
+    .map((seller) => ({
+      id: seller.id,
+      fullName: seller.fullName,
+      totalSales: seller.products.reduce(
+        (sum, product) => sum + (product.salesCount || 0),
+        0,
+      ),
+    }))
+    .sort((a, b) => b.totalSales - a.totalSales)
+    .slice(0, 5);
+};
+
 export const generateFinancialReport = async () => {
   const [
     payments,
@@ -260,6 +315,83 @@ export const resolveFraudAlert = async (alertId: string) => {
   };
 };
 
+export const getSalesChart = async () => {
+  const orders = await prisma.order.findMany({
+    where: {
+      status: {
+        in: ["PAID", "COMPLETED", "DELIVERED"],
+      },
+    },
+    select: {
+      totalAmount: true,
+      createdAt: true,
+    },
+  });
+
+  const months = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+
+  const data = months.map((month) => ({
+    month,
+    sales: 0,
+  }));
+
+  orders.forEach((order) => {
+    const monthIndex = new Date(order.createdAt).getMonth();
+
+    data[monthIndex].sales += Number(order.totalAmount);
+  });
+
+  return data;
+};
+
+export const getFinancingChart = async () => {
+  const financings = await prisma.financing.findMany({
+    select: {
+      createdAt: true,
+    },
+  });
+
+  const months = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+
+  const data = months.map((month) => ({
+    month,
+    financings: 0,
+  }));
+
+  financings.forEach((financing) => {
+    const monthIndex = new Date(financing.createdAt).getMonth();
+
+    data[monthIndex].financings += 1;
+  });
+
+  return data;
+};
 export const blockUser = async (userId: string, actorId?: string) => {
   const user = await prisma.user.update({
     where: {

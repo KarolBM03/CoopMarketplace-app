@@ -10,6 +10,10 @@ import {
   RejectAdminSellerUseCase,
   UnblockAdminUserUseCase,
 } from "../../../../application/use-cases/admin/AdminUseCases";
+import { GetTopProductsUseCase } from "../../../../application/use-cases/admin/GetTopProductsUseCase";
+import { GetTopSellersUseCase } from "../../../../application/use-cases/admin/GetTopSellersUseCase";
+import { GetSalesChartUseCase } from "../../../../application/use-cases/admin/GetSalesChartUseCase";
+import { GetFinancingChartUseCase } from "../../../../application/use-cases/admin/GetFinancingChartUseCase";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import { LegacyAdminRepository } from "../../../../infrastructure/repositories/LegacyAdminRepository";
 import { handleControllerError } from "../../../../shared/utils/controllerError";
@@ -62,6 +66,45 @@ export class AdminControllerV2 {
     }
   };
 
+  topProducts = async (_req: AuthRequest, res: Response) => {
+    try {
+      return res.json(
+        await new GetTopProductsUseCase(this.adminRepository).execute(),
+      );
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  };
+
+  topSellers = async (_req: AuthRequest, res: Response) => {
+    try {
+      return res.json(
+        await new GetTopSellersUseCase(this.adminRepository).execute(),
+      );
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  };
+
+  salesChart = async (_req: AuthRequest, res: Response) => {
+    try {
+      return res.json(
+        await new GetSalesChartUseCase(this.adminRepository).execute(),
+      );
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  };
+
+  financingChart = async (_req: AuthRequest, res: Response) => {
+    try {
+      return res.json(
+        await new GetFinancingChartUseCase(this.adminRepository).execute(),
+      );
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  };
   users = async (_req: AuthRequest, res: Response) => {
     try {
       return res.json(
