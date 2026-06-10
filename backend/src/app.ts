@@ -23,6 +23,7 @@ import onionReportRoutes from "./presentation/http/routes/report.routes";
 import { setupSwaggerDocs } from "./infrastructure/docs/swagger";
 import reviewRoutes from "./presentation/http/routes/review.routes";
 import favoriteRoutes from "./presentation/http/routes/favorite.routes";
+import serviceRoutes from "./presentation/http/routes/serviceRequest.routes";
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use("/api/chat", onionChatRoutes);
 app.use("/api/push", onionPushRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/favorites", favoriteRoutes);
+app.use("/api/services", serviceRoutes);
 app.get("/", (_req, res) => {
   res.send("Marketplace API Corriendo");
 });
