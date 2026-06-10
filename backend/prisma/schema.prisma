@@ -63,6 +63,7 @@ model User {
 
   deliveryProofs ShipmentProof[]
   deliveryScore Int @default(100)
+  serviceRequests ServiceRequest[]
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
 
@@ -327,6 +328,7 @@ model Order {
   shipments           Shipment[]
   productReviews      ProductReview[]
   sellerReviews       SellerReview[]
+  serviceRequests ServiceRequest[]
 }
 
 model OrderItem {
@@ -535,4 +537,57 @@ model PushToken {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
+}
+
+model ServiceRequest {
+  id String @id @default(uuid())
+
+  customerId String
+  orderId String?
+
+  category ServiceCategory
+  title String
+  description String
+
+  pickupAddress String?
+  deliveryAddress String?
+  city String?
+  province String?
+
+  photoUrl String?
+
+  amount Float?
+  providerExternalId String?
+  providerName String?
+
+  status ServiceRequestStatus @default(PENDING)
+
+  cooperativeResponse Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer User @relation(fields: [customerId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@index([customerId])
+  @@index([orderId])
+  @@index([category])
+  @@index([status])
+}
+
+enum ServiceCategory {
+  DELIVERY
+  TOWING
+  MOVING
+  TECHNICAL
+  OTHER
+}
+
+enum ServiceRequestStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }

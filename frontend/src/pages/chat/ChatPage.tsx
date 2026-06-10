@@ -37,15 +37,15 @@ export default function ChatPage() {
 
     return conversations.filter((conversation) => {
       const product = conversation.product?.title || "";
-      const buyer = conversation.buyer?.fullName || "";
-      const seller = conversation.seller?.fullName || "";
+      const buyer = user?.role === "ADMIN" ? conversation.buyer?.fullName || "" : "";
+      const seller = user?.role === "ADMIN" ? conversation.seller?.fullName || "" : "";
       const lastMessage = conversation.messages?.[0]?.content || "";
 
       return `${product} ${buyer} ${seller} ${lastMessage}`
         .toLowerCase()
         .includes(term);
     });
-  }, [conversations, search]);
+  }, [conversations, search, user?.role]);
 
   useEffect(() => {
     loadConversations();
@@ -147,14 +147,10 @@ export default function ChatPage() {
   const selectedTitle = selected?.product?.title || "Chat";
   const selectedSubtitle =
     user?.role === "ADMIN"
-      ? `${selected?.buyer?.fullName || "Cliente"} con ${
-          selected?.seller?.fullName || "Vendedor"
+      ? `Vendedor: ${selected?.seller?.fullName || "Sin nombre"} | Cliente: ${
+          selected?.buyer?.fullName || "Sin nombre"
         }`
-      : user?.role === "SELLER"
-        ? selected?.buyer?.fullName || "Cliente"
-        : selected?.seller?.storeName ||
-          selected?.seller?.fullName ||
-          "Vendedor";
+      : selected?.product?.title || "Producto";
 
   return (
     <div className="grid h-[calc(100vh-90px)] grid-cols-1 gap-4 bg-slate-50 p-4 sm:p-6 lg:grid-cols-[380px_1fr]">
@@ -205,11 +201,13 @@ export default function ChatPage() {
                 const lastMessage =
                   conversation.messages?.[0]?.content || "Sin mensajes";
                 const participant =
-                  user?.role === "SELLER"
-                    ? conversation.buyer?.fullName || "Cliente"
-                    : conversation.seller?.storeName ||
-                      conversation.seller?.fullName ||
-                      "Vendedor";
+                  user?.role === "ADMIN"
+                    ? `Vendedor: ${
+                        conversation.seller?.fullName || "Sin nombre"
+                      } | Cliente: ${
+                        conversation.buyer?.fullName || "Sin nombre"
+                      }`
+                    : conversation.product?.title || "Producto";
 
                 return (
                   <button
