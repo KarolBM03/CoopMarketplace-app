@@ -13,11 +13,11 @@ interface RegisterData {
   phone?: string;
   role: "CUSTOMER" | "SELLER";
   acceptedTerms: boolean;
+  documentId: string;
 
   storeName?: string;
   mainCategory?: string;
   city?: string;
-  documentId?: string;
   bankAccount?: string;
   identityImageUrl?: string;
 }

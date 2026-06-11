@@ -37,8 +37,10 @@ export default function ChatPage() {
 
     return conversations.filter((conversation) => {
       const product = conversation.product?.title || "";
-      const buyer = user?.role === "ADMIN" ? conversation.buyer?.fullName || "" : "";
-      const seller = user?.role === "ADMIN" ? conversation.seller?.fullName || "" : "";
+      const buyer =
+        user?.role === "ADMIN" ? conversation.buyer?.fullName || "" : "";
+      const seller =
+        user?.role === "ADMIN" ? conversation.seller?.fullName || "" : "";
       const lastMessage = conversation.messages?.[0]?.content || "";
 
       return `${product} ${buyer} ${seller} ${lastMessage}`
@@ -279,10 +281,6 @@ export default function ChatPage() {
               <h2 className="mt-5 text-2xl font-black text-slate-900">
                 Selecciona una conversacion
               </h2>
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-                Aqui podras hablar con compradores, vendedores o auditar chats
-                como administrador.
-              </p>
             </div>
           </div>
         ) : (
@@ -428,8 +426,8 @@ export default function ChatPage() {
             ) : (
               <div className="border-t border-slate-200 bg-white p-4">
                 <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">
-                  Vista de auditoria: el administrador puede revisar la
-                  conversacion, pero no enviar mensajes.
+                  Vista de auditoria: Puedes revisar la conversacion, pero no
+                  enviar mensajes.
                 </div>
               </div>
             )}

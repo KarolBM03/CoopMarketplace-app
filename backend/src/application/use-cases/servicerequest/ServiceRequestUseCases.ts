@@ -54,6 +54,21 @@ export class GetMyServiceRequestsUseCase {
   async execute(customerId: string) {
     return await prisma.serviceRequest.findMany({
       where: { customerId },
+      select: {
+        id: true,
+        category: true,
+        title: true,
+        description: true,
+        pickupAddress: true,
+        deliveryAddress: true,
+        city: true,
+        province: true,
+        photoUrl: true,
+        amount: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: { createdAt: "desc" },
     });
   }

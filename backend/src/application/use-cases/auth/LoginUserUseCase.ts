@@ -9,8 +9,10 @@ export class LoginUserUseCase {
   constructor(private userRepository: UserRepository) {}
 
   async execute(data: LoginUserDTO) {
-    const email = data.email.trim().toLowerCase();
-    const user = await this.userRepository.findByEmail(email);
+    const identifier = String(data.identifier || data.email || "").trim();
+    const user = identifier.includes("@")
+      ? await this.userRepository.findByEmail(identifier.toLowerCase())
+      : await this.userRepository.findByDocumentId(identifier);
 
     if (!user) {
       throw new Error("Sus credenciales son inválidas");
@@ -18,6 +20,15 @@ export class LoginUserUseCase {
 
     if (user.isBlocked) {
       throw new Error("Usted esta bloqueado");
+    }
+
+    if (
+      user.role !== "ADMIN" &&
+      (!user.isCooperativeMember || !user.cooperativeMemberId)
+    ) {
+      throw new Error(
+        "Debe ser socio de la cooperativa para iniciar sesion en CoopMarket",
+      );
     }
 
     if (!user.isVerified) {

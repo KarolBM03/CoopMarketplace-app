@@ -34,6 +34,7 @@ import ChatPage from "../pages/chat/ChatPage";
 import AdminChatAuditPage from "../pages/admin/AdminChatPage";
 import AdminDeliveryProofsPage from "../pages/admin/AdminDeliveryProofsPage";
 import FavoritesPage from "../pages/customer/FavoritesPage";
+import AdminCooperativePage from "../pages/admin/AdminCooperativePage";
 
 export default function AppRoutes() {
   return (
@@ -55,6 +56,7 @@ export default function AppRoutes() {
           <Route path="sellers" element={<AdminSellersPage />} />
           <Route path="financings" element={<AdminFinancingsPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
+          <Route path="cooperative" element={<AdminCooperativePage />} />
           <Route path="/admin/chats" element={<AdminChatAuditPage />} />
           <Route
             path="/admin/delivery-proofs"

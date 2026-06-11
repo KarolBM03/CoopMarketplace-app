@@ -44,7 +44,7 @@ export const registerSchema = z
     storeName: z.string().optional(),
     mainCategory: z.string().optional(),
     city: z.string().optional(),
-    documentId: z.string().optional(),
+    documentId: documentSchema,
     bankAccount: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -61,7 +61,6 @@ export const registerSchema = z
         ["storeName", data.storeName],
         ["mainCategory", data.mainCategory],
         ["city", data.city],
-        ["documentId", data.documentId],
         ["bankAccount", data.bankAccount],
       ].forEach(([field, value]) => {
         if (!String(value || "").trim()) {

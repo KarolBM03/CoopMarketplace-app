@@ -16,7 +16,8 @@ export interface RegisterUserDTO {
 }
 
 export interface LoginUserDTO {
-  email: string;
+  email?: string;
+  identifier?: string;
   password: string;
 }
 

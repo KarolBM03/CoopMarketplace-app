@@ -51,6 +51,16 @@ export class PrismaUserRepository implements UserRepository {
     })) as User | null;
   }
 
+  async findByDocumentId(documentId: string): Promise<User | null> {
+    const normalizedDocument = documentId.replace(/\D/g, "");
+
+    return (await prisma.user.findFirst({
+      where: {
+        documentId: normalizedDocument,
+      },
+    })) as User | null;
+  }
+
   async update(id: string, data: Partial<User>): Promise<User> {
     return (await prisma.user.update({
       where: { id },

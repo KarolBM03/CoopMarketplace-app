@@ -24,6 +24,9 @@ import { setupSwaggerDocs } from "./infrastructure/docs/swagger";
 import reviewRoutes from "./presentation/http/routes/review.routes";
 import favoriteRoutes from "./presentation/http/routes/favorite.routes";
 import serviceRoutes from "./presentation/http/routes/serviceRequest.routes";
+import webhookRoutes from "./presentation/http/routes/webhook.routes";
+import cooperativeRoutes from "./presentation/http/routes/cooperative.routes";
+import mockCooperativeRoutes from "./presentation/http/routes/mockCooperative.routes";
 
 const app = express();
 
@@ -53,6 +56,9 @@ app.use("/api/push", onionPushRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/favorites", favoriteRoutes);
 app.use("/api/services", serviceRoutes);
+app.use("/api/webhooks", webhookRoutes);
+app.use("/api/cooperative", cooperativeRoutes);
+app.use("/api/mock-coop", mockCooperativeRoutes);
 app.get("/", (_req, res) => {
   res.send("Marketplace API Corriendo");
 });

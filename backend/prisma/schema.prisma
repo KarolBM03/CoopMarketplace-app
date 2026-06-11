@@ -591,3 +591,17 @@ enum ServiceRequestStatus {
   COMPLETED
   CANCELLED
 }
+
+model CooperativeWebhookEvent {
+  id          String @id @default(uuid())
+
+  event       String 
+  externalId  String?
+  payload     Json
+
+  processed   Boolean @default(false)
+  errorMessage String?
+
+  createdAt    DateTime @default(now())
+  processedAt  DateTime?
+}

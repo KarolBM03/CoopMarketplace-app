@@ -2,6 +2,7 @@ import { Router } from "express";
 import { protect } from "../middlewares/auth.middleware";
 import { authorize } from "../middlewares/role.middleware";
 import { AdminControllerV2 } from "../controllers/admin/AdminControllerV2";
+import { loginCooperative } from "../../../infrastructure/external-services/cooperative.service";
 
 const router = Router();
 const controller = new AdminControllerV2();
@@ -17,6 +18,26 @@ router.get(
   protect,
   authorize("ADMIN"),
   controller.topProducts,
+);
+
+router.get(
+  "/test-cooperative-login",
+  protect,
+  authorize("ADMIN"),
+  async (_req, res) => {
+    try {
+      const result = await loginCooperative();
+
+      return res.json({
+        message: "Login cooperativa funcionando",
+        data: result,
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+  },
 );
 router.get("/top-sellers", protect, authorize("ADMIN"), controller.topSellers);
 router.get("/sales-chart", protect, authorize("ADMIN"), controller.salesChart);

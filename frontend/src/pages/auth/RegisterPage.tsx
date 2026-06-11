@@ -43,12 +43,12 @@ export default function RegisterPage() {
         password: values.password,
         role: values.role,
         phone: values.phone,
+        documentId: values.documentId,
         acceptedTerms: values.acceptedTerms,
         storeName: values.role === "SELLER" ? values.storeName : undefined,
         mainCategory:
           values.role === "SELLER" ? values.mainCategory : undefined,
         city: values.role === "SELLER" ? values.city : undefined,
-        documentId: values.role === "SELLER" ? values.documentId : undefined,
         bankAccount: values.role === "SELLER" ? values.bankAccount : undefined,
         identityImageUrl:
           values.role === "SELLER" ? finalIdentityImageUrl : undefined,
@@ -127,6 +127,11 @@ export default function RegisterPage() {
               {...register("phone")}
             />
             <FormInput
+              placeholder="Cedula"
+              error={errors.documentId?.message}
+              {...register("documentId")}
+            />
+            <FormInput
               type="password"
               placeholder="Contraseña"
               error={errors.password?.message}
@@ -155,11 +160,6 @@ export default function RegisterPage() {
                   placeholder="Ciudad o direccion"
                   error={errors.city?.message}
                   {...register("city")}
-                />
-                <FormInput
-                  placeholder="Cedula o RNC"
-                  error={errors.documentId?.message}
-                  {...register("documentId")}
                 />
                 <FormInput
                   placeholder="Cuenta bancaria"

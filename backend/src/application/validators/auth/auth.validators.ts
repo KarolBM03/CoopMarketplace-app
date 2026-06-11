@@ -3,6 +3,11 @@ import { z } from "zod";
 const emailSchema = z.string().email("Correo inválido").trim().toLowerCase();
 const passwordSchema = z.string().min(8, "La contraseña debe tener al menos 8 caracteres");
 const otpChannelSchema = z.enum(["email", "sms", "whatsapp"]).optional();
+const documentSchema = z
+  .string()
+  .trim()
+  .min(9, "La cedula es requerida")
+  .regex(/^[0-9-]{9,13}$/, "Cedula/RNC invalido");
 
 export const registerUserSchema = z.object({
   fullName: z.string().trim().min(2, "El nombre es requerido"),
@@ -14,7 +19,7 @@ export const registerUserSchema = z.object({
   storeName: z.string().trim().optional(),
   mainCategory: z.string().trim().optional(),
   city: z.string().trim().optional(),
-  documentId: z.string().trim().optional(),
+  documentId: documentSchema,
   bankAccount: z.string().trim().optional(),
   identityImageUrl: z.string().trim().optional(),
 });
