@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
-import { GetUserNotificationsUseCase } from "../../../../application/use-cases/notification/NotificationUseCases";
+import {
+  GetUserNotificationsUseCase,
+  MarkNotificationAsReadUseCase,
+} from "../../../../application/use-cases/notification/NotificationUseCases";
 import { LegacyNotificationRepository } from "../../../../infrastructure/repositories/LegacyNotificationRepository";
 import { handleControllerError } from "../../../../shared/utils/controllerError";
+import { AuthRequest } from "../../middlewares/auth.middleware";
 
 export class NotificationControllerV2 {
   constructor(private readonly notificationRepository = new LegacyNotificationRepository()) {}
@@ -13,6 +17,18 @@ export class NotificationControllerV2 {
         req.params.userId as string,
         Number(req.query.page) || 1,
         Number(req.query.limit) || 10,
+      ));
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  };
+
+  markAsRead = async (req: AuthRequest, res: Response) => {
+    try {
+      const useCase = new MarkNotificationAsReadUseCase(this.notificationRepository);
+      return res.json(await useCase.execute(
+        req.user?.id as string,
+        req.params.notificationId as string,
       ));
     } catch (error) {
       return handleControllerError(error, res);

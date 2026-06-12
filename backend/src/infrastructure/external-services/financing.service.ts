@@ -5,8 +5,11 @@ import { createAuditLog } from "./audit.service";
 import { analyzeFinancingRisk } from "./fraud.service";
 import {
   createPaymentLink,
+  createCooperativeMember,
+  createCooperativeLoanApplication,
+  findCooperativeMemberByCedula,
+  getCooperativeMemberEligibility,
   isCooperativeConfigured,
-  sendLoanApplication,
 } from "./cooperative.service";
 
 interface FinancingData {
@@ -21,6 +24,42 @@ interface FinancingData {
   months: number;
   currency?: string;
 }
+
+const normalizeDocument = (documentId?: string) =>
+  String(documentId || "").replace(/\D/g, "");
+
+const unwrapCoopData = (response: any) =>
+  response && typeof response === "object" && "data" in response
+    ? response.data
+    : response;
+
+const readSocioId = (response: any) => {
+  const data = unwrapCoopData(response) || {};
+  return data.id || data.socioId;
+};
+
+const readEligibility = (response: any) => {
+  const data = unwrapCoopData(response) || {};
+  return {
+    eligible: Boolean(data.esElegibleParaPrestamo),
+    reason: data.razon || data.message || "Socio no elegible para prestamo",
+    raw: response,
+  };
+};
+
+const readLoanApplication = (response: any) => {
+  const data = unwrapCoopData(response) || {};
+  const solicitudPrestamoId =
+    data.solicitudPrestamoId || data.id || data.loanApplicationId;
+
+  return {
+    externalLoanId: solicitudPrestamoId ? String(solicitudPrestamoId) : null,
+    externalReference:
+      data.referencia || data.externalReference || data.codigo || null,
+    externalStatus: data.estado || data.status || "SENT_TO_COOPERATIVE",
+    raw: response,
+  };
+};
 
 export const createFinancing = async ({
   customerId,
@@ -49,11 +88,97 @@ export const createFinancing = async ({
   const totalAmount = Number(product.price);
   const monthlyPayment = totalAmount / months;
   const coopEnabled = isCooperativeConfigured();
+  const customer = await prisma.user.findUnique({
+    where: { id: customerId },
+  });
+
+  if (!customer) {
+    throw new Error("Cliente no encontrado");
+  }
+
+  const customerCedula = normalizeDocument(cedula || customer.documentId || "");
+
+  if (!customerCedula) {
+    throw new Error("La cedula del socio es requerida");
+  }
+
+  let cooperativeResponse: any = {
+    success: true,
+    status: "LOCAL_PENDING_REVIEW",
+    message:
+      "Solicitud registrada en modo local. Configura COOP_ENABLED=true y COOP_API_URL para integracion real.",
+    simulated: true,
+  };
+  let externalLoanId: string | null = null;
+  let externalReference: string | null = null;
+  let externalStatus = coopEnabled
+    ? "SENT_TO_COOPERATIVE"
+    : "LOCAL_PENDING_REVIEW";
+
+  if (coopEnabled) {
+    let memberResponse: any;
+    let socioId = customer.cooperativeMemberId;
+
+    if (!socioId) {
+      try {
+        memberResponse = await findCooperativeMemberByCedula(customerCedula);
+      } catch {
+        memberResponse = await createCooperativeMember({
+          fullName: customer.fullName,
+          email: customer.email,
+          phone: phone || customer.phone || undefined,
+          identification: customerCedula,
+          role: customer.role,
+        });
+      }
+
+      socioId = readSocioId(memberResponse);
+    } else {
+      memberResponse = {
+        data: {
+          id: socioId,
+          identificacion: customerCedula,
+          source: "LOCAL_USER_COOPERATIVE_LINK",
+        },
+      };
+    }
+
+    if (!socioId) {
+      throw new Error("No se pudo identificar el socio en CoopHispanica");
+    }
+
+    const eligibilityResponse = await getCooperativeMemberEligibility(socioId);
+    const eligibility = readEligibility(eligibilityResponse);
+
+    if (!eligibility.eligible) {
+      throw new Error(eligibility.reason);
+    }
+
+    const loanApplicationResponse = await createCooperativeLoanApplication({
+      socioId: Number(socioId),
+      montoSolicitado: totalAmount,
+      frecuenciaPago: Number(process.env.COOP_DEFAULT_PAYMENT_FREQUENCY || 1),
+      cantidadCuotas: months,
+      objetivoPrestamo: `Compra marketplace: ${product.title}`,
+      tipoPrestamoId: Number(process.env.COOP_DEFAULT_LOAN_TYPE_ID || 2),
+    });
+
+    const loanApplication = readLoanApplication(loanApplicationResponse);
+
+    cooperativeResponse = {
+      member: memberResponse,
+      eligibility: eligibility.raw,
+      loanApplication: loanApplication.raw,
+    };
+    externalLoanId = loanApplication.externalLoanId;
+    externalReference = loanApplication.externalReference;
+    externalStatus = loanApplication.externalStatus;
+  }
 
   const financing = await prisma.financing.create({
     data: {
       customerId,
-      cedula,
+      cedula: customerCedula,
       income,
       company,
       phone,
@@ -72,9 +197,10 @@ export const createFinancing = async ({
         ? FinancingStatus.SENT_TO_COOPERATIVE
         : FinancingStatus.PENDING,
       sentToCooperativeAt: coopEnabled ? new Date() : null,
-      externalStatus: coopEnabled
-        ? "SENT_TO_COOPERATIVE"
-        : "LOCAL_PENDING_REVIEW",
+      externalLoanId,
+      externalReference,
+      externalStatus,
+      cooperativeResponse,
     },
     include: {
       customer: true,
@@ -84,28 +210,12 @@ export const createFinancing = async ({
 
   await analyzeFinancingRisk(customerId, Number(totalAmount));
 
-  const cooperativeResponse = coopEnabled
-    ? await sendLoanApplication({
-        financingId: financing.id,
-      })
-    : {
-        success: true,
-        status: "LOCAL_PENDING_REVIEW",
-        message:
-          "Solicitud registrada en modo local. Configura COOP_API_URL y COOP_API_KEY para integracion real.",
-        simulated: true,
-      };
-
   const updatedFinancing = await prisma.financing.update({
     where: { id: financing.id },
     data: {
-      externalLoanId: coopEnabled
-        ? (cooperativeResponse as any).externalLoanId
-        : null,
-      externalReference: coopEnabled
-        ? (cooperativeResponse as any).externalReference
-        : null,
-      externalStatus: cooperativeResponse.status || "SENT_TO_COOPERATIVE",
+      externalLoanId,
+      externalReference,
+      externalStatus,
       cooperativeResponse,
     },
     include: {

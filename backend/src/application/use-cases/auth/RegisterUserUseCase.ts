@@ -38,7 +38,12 @@ export class RegisterUserUseCase {
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    const role = data.role === UserRole.SELLER ? UserRole.SELLER : UserRole.CUSTOMER;
+    const role =
+      data.role === UserRole.SELLER
+        ? UserRole.SELLER
+        : data.role === UserRole.SERVICE_PROVIDER
+          ? UserRole.SERVICE_PROVIDER
+          : UserRole.CUSTOMER;
     const documentId = normalizeDocument(data.documentId);
 
     if (!documentId) {
@@ -80,7 +85,10 @@ export class RegisterUserUseCase {
       memberNumber: cooperativeMember.memberNumber,
       isCooperativeMember: true,
       cooperativeStatus: cooperativeMember.cooperativeStatus,
-      sellerStatus: role === UserRole.SELLER ? "PENDING" : null,
+      sellerStatus:
+        role === UserRole.SELLER || role === UserRole.SERVICE_PROVIDER
+          ? "PENDING"
+          : null,
       storeName: data.storeName,
       mainCategory: data.mainCategory,
       city: data.city,

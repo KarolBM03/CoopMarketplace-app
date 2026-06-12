@@ -1,6 +1,9 @@
 import { Bell, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getNotificationsPage } from "../../services/notification.service";
+import {
+  getNotificationsPage,
+  markNotificationAsRead,
+} from "../../services/notification.service";
 import { useAuthStore } from "../../store/auth.store";
 import type { AppNotification } from "../../types/finance.types";
 
@@ -26,6 +29,17 @@ export default function SellerNotificationsPage() {
     setTotalPages(data.pagination.totalPages);
     setTotal(data.pagination.total);
     setLoading(false);
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    await markNotificationAsRead(notificationId);
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read: true }
+          : notification,
+      ),
+    );
   };
 
   return (
@@ -89,15 +103,26 @@ export default function SellerNotificationsPage() {
                   </p>
                 </div>
 
-                <span
-                  className={`rounded-full px-4 py-2 text-sm font-black ${
-                    notification.read
-                      ? "bg-slate-100 text-slate-500"
-                      : "bg-emerald-100 text-emerald-700"
-                  }`}
-                >
-                  {notification.read ? "Leida" : "Nueva"}
-                </span>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <span
+                    className={`rounded-full px-4 py-2 text-sm font-black ${
+                      notification.read
+                        ? "bg-slate-100 text-slate-500"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {notification.read ? "Leida" : "Nueva"}
+                  </span>
+
+                  {!notification.read && (
+                    <button
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700"
+                    >
+                      Marcar leida
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))

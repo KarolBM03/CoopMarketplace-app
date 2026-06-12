@@ -1,4 +1,5 @@
 import { ProductRepository } from "../../../domain/repositories/ProductRepository";
+import { ensureProductImageMatchesTitle } from "../../../infrastructure/external-services/productImageModeration.service";
 
 export class UpdateProductUseCase {
   constructor(private productRepository: ProductRepository) {}
@@ -13,6 +14,13 @@ export class UpdateProductUseCase {
     if (actor?.role !== "ADMIN" && product.sellerId !== actor?.id) {
       throw new Error("No puedes editar este producto");
     }
+
+    await ensureProductImageMatchesTitle({
+      title: data.title || product.title,
+      description: data.description || product.description,
+      category: data.category || product.category,
+      imageUrl: data.imageUrl || product.imageUrl,
+    });
 
     return await this.productRepository.update(productId, data);
   }

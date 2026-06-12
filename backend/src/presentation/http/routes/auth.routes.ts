@@ -13,28 +13,33 @@ import { protect } from "../middlewares/auth.middleware";
 import { authorize } from "../middlewares/role.middleware";
 import { allowSelfOrAdmin } from "../middlewares/ownership.middleware";
 import { validateBody } from "../middlewares/validateRequest";
+import { authLimiter, otpLimiter } from "../middlewares/rateLimit.middleware";
 
 const router = Router();
 const authController = new AuthControllerV2();
 
 router.post(
   "/register",
+  authLimiter,
   validateBody(registerUserSchema),
   authController.register,
 );
-router.post("/login", validateBody(loginUserSchema), authController.login);
+router.post("/login", authLimiter, validateBody(loginUserSchema), authController.login);
 router.post(
   "/verify-otp",
+  otpLimiter,
   validateBody(verifyOTPSchema),
   authController.verifyOTP,
 );
 router.post(
   "/resend-otp",
+  otpLimiter,
   validateBody(resendOTPSchema),
   authController.resendOTP,
 );
 router.post(
   "/resend/otp",
+  otpLimiter,
   validateBody(resendOTPSchema),
   authController.resendOTP,
 );
@@ -50,16 +55,19 @@ router.post(
 );
 router.post(
   "/forgot-password",
+  authLimiter,
   validateBody(forgotPasswordSchema),
   authController.forgotPassword,
 );
 router.post(
   "/reset-password/:token",
+  authLimiter,
   validateBody(resetPasswordSchema),
   authController.resetPassword,
 );
 router.post(
   "/reset-password",
+  authLimiter,
   validateBody(resetPasswordSchema),
   authController.resetPassword,
 );

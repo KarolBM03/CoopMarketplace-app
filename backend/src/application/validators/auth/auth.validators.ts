@@ -1,7 +1,9 @@
 import { z } from "zod";
 
-const emailSchema = z.string().email("Correo inválido").trim().toLowerCase();
-const passwordSchema = z.string().min(8, "La contraseña debe tener al menos 8 caracteres");
+const emailSchema = z.string().email("Correo invalido").trim().toLowerCase();
+const passwordSchema = z
+  .string()
+  .min(8, "La contrasena debe tener al menos 8 caracteres");
 const otpChannelSchema = z.enum(["email", "sms", "whatsapp"]).optional();
 const documentSchema = z
   .string()
@@ -14,7 +16,7 @@ export const registerUserSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   phone: z.string().trim().optional(),
-  role: z.enum(["CUSTOMER", "SELLER", "ADMIN"]).optional(),
+  role: z.enum(["CUSTOMER", "SELLER", "SERVICE_PROVIDER", "ADMIN"]).optional(),
   acceptedTerms: z.boolean().optional(),
   storeName: z.string().trim().optional(),
   mainCategory: z.string().trim().optional(),
@@ -24,10 +26,16 @@ export const registerUserSchema = z.object({
   identityImageUrl: z.string().trim().optional(),
 });
 
-export const loginUserSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1, "La contraseña es requerida"),
-});
+export const loginUserSchema = z
+  .object({
+    identifier: z.string().trim().optional(),
+    email: z.string().trim().optional(),
+    password: z.string().min(1, "La contrasena es requerida"),
+  })
+  .refine((data) => Boolean(data.identifier || data.email), {
+    message: "La cedula o correo es requerido",
+    path: ["identifier"],
+  });
 
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token requerido"),
@@ -35,7 +43,7 @@ export const refreshTokenSchema = z.object({
 
 export const verifyOTPSchema = z.object({
   email: emailSchema,
-  otpCode: z.string().trim().min(1, "El código OTP es requerido"),
+  otpCode: z.string().trim().min(1, "El codigo OTP es requerido"),
   channel: otpChannelSchema,
 });
 
@@ -52,6 +60,3 @@ export const resetPasswordSchema = z.object({
   token: z.string().trim().optional(),
   password: passwordSchema,
 });
-
-
-

@@ -57,6 +57,27 @@ export const getNotificationsByUser = async (
   };
 };
 
+export const markNotificationAsRead = async (
+  userId: string,
+  notificationId: string,
+) => {
+  const notification = await prisma.notification.findFirst({
+    where: {
+      id: notificationId,
+      userId,
+    },
+  });
+
+  if (!notification) {
+    throw new Error("Notificacion no encontrada");
+  }
+
+  return prisma.notification.update({
+    where: { id: notificationId },
+    data: { read: true },
+  });
+};
+
 export const sendEmailNotification = async (
   to: string,
   subject: string,

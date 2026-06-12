@@ -35,9 +35,12 @@ export class LoginUserUseCase {
       throw new Error("Debe verificar su cuenta antes de iniciar sesión");
     }
 
-    if (user.role === "SELLER" && user.sellerStatus !== SellerStatus.APPROVED) {
+    if (
+      (user.role === "SELLER" || user.role === "SERVICE_PROVIDER") &&
+      user.sellerStatus !== SellerStatus.APPROVED
+    ) {
       throw new Error(
-        "Su perfil de vendedor aun no ha sido aprobado, espere a que se lo aprueben",
+        "Su perfil aun no ha sido aprobado, espere a que el administrador lo apruebe",
       );
     }
 

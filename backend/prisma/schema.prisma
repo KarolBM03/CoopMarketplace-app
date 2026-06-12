@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   CUSTOMER
   SELLER
+  SERVICE_PROVIDER
   ADMIN
 }
 
@@ -43,6 +44,8 @@ model User {
   products      Product[]
   financings    Financing[]
   notifications Notification[]
+  serviceOfferings ServiceOffering[] @relation("ServiceProviderOfferings")
+  providerServiceRequests ServiceRequest[] @relation("ServiceProviderRequests")
   ledgerEntries LedgerEntry[]
   transactions  Transaction[]
   wallet        Wallet?
@@ -544,6 +547,8 @@ model ServiceRequest {
 
   customerId String
   orderId String?
+  serviceOfferingId String?
+  providerId String?
 
   category ServiceCategory
   title String
@@ -568,12 +573,40 @@ model ServiceRequest {
   updatedAt DateTime @updatedAt
 
   customer User @relation(fields: [customerId], references: [id])
+  provider User? @relation("ServiceProviderRequests", fields: [providerId], references: [id])
+  serviceOffering ServiceOffering? @relation(fields: [serviceOfferingId], references: [id])
   order Order? @relation(fields: [orderId], references: [id])
 
   @@index([customerId])
+  @@index([providerId])
   @@index([orderId])
+  @@index([serviceOfferingId])
   @@index([category])
   @@index([status])
+}
+
+model ServiceOffering {
+  id String @id @default(uuid())
+
+  providerId String
+  category ServiceCategory
+  name String
+  description String
+  estimatedTime String?
+  estimatedPrice Float?
+  imageUrl String?
+  city String?
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  provider User @relation("ServiceProviderOfferings", fields: [providerId], references: [id])
+  requests ServiceRequest[]
+
+  @@index([providerId])
+  @@index([category])
+  @@index([isActive])
 }
 
 enum ServiceCategory {

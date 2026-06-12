@@ -2,7 +2,7 @@ import api from "../api/axios";
 import type { AuthResponse } from "../types/auth.types";
 
 interface LoginData {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -11,7 +11,7 @@ interface RegisterData {
   email: string;
   password: string;
   phone?: string;
-  role: "CUSTOMER" | "SELLER";
+  role: "CUSTOMER" | "SELLER" | "SERVICE_PROVIDER";
   acceptedTerms: boolean;
   documentId: string;
 
@@ -27,7 +27,7 @@ export type OTPChannel = "email" | "sms" | "whatsapp";
 export const loginUser = async (data: LoginData): Promise<AuthResponse> => {
   const response = await api.post("/auth/login", {
     ...data,
-    email: data.email.trim().toLowerCase(),
+    identifier: data.identifier.trim(),
   });
   return response.data;
 };

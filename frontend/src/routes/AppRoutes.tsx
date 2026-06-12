@@ -35,6 +35,13 @@ import AdminChatAuditPage from "../pages/admin/AdminChatPage";
 import AdminDeliveryProofsPage from "../pages/admin/AdminDeliveryProofsPage";
 import FavoritesPage from "../pages/customer/FavoritesPage";
 import AdminCooperativePage from "../pages/admin/AdminCooperativePage";
+import ServicesPage from "../pages/services/ServicesPage";
+import ServiceRequestPage from "../pages/services/ServiceRequestPage";
+import MyServiceRequestsPage from "../pages/services/MyServiceRequestsPage";
+import ProviderServicesPage from "../pages/provider/ProviderServicesPage";
+import ProviderMyServicesPage from "../pages/provider/ProviderMyServicesPage";
+import AdminServicesPage from "../pages/admin/AdminServicesPage";
+import ServiceProviderLayout from "../components/layout/ServiceProviderLayout";
 
 export default function AppRoutes() {
   return (
@@ -56,6 +63,7 @@ export default function AppRoutes() {
           <Route path="sellers" element={<AdminSellersPage />} />
           <Route path="financings" element={<AdminFinancingsPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
+          <Route path="services" element={<AdminServicesPage />} />
           <Route path="cooperative" element={<AdminCooperativePage />} />
           <Route path="/admin/chats" element={<AdminChatAuditPage />} />
           <Route
@@ -74,9 +82,25 @@ export default function AppRoutes() {
           <Route index element={<SellerDashboardHome />} />
           <Route path="products" element={<SellerProductsPage />} />
           <Route path="sales" element={<SellerSalesPage />} />
+          <Route path="services" element={<ServicesPage />} />
+          <Route path="services/request" element={<ServiceRequestPage />} />
+          <Route path="services/my-requests" element={<MyServiceRequestsPage />} />
           <Route path="wallet" element={<SellerWalletPage />} />
           <Route path="shipments" element={<SellerShipmentsPage />} />
           <Route path="notifications" element={<SellerNotificationsPage />} />
+        </Route>
+
+        <Route
+          path="/provider"
+          element={
+            <ProtectedRoute allowedRoles={["SERVICE_PROVIDER", "ADMIN"]}>
+              <ServiceProviderLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ProviderMyServicesPage />} />
+          <Route path="services" element={<ProviderServicesPage />} />
+          <Route path="my-services" element={<ProviderMyServicesPage />} />
         </Route>
 
         <Route
@@ -115,6 +139,18 @@ export default function AppRoutes() {
         <Route path="/products/:id" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route
+          path="/services"
+          element={
+            <ProtectedRoute allowedRoles={["CUSTOMER", "SELLER", "ADMIN"]}>
+              <CustomerLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ServicesPage />} />
+          <Route path="request" element={<ServiceRequestPage />} />
+          <Route path="my-requests" element={<MyServiceRequestsPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

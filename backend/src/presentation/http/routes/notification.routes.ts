@@ -12,5 +12,10 @@ router.get(
   allowSelfOrAdmin("userId"),
   controller.getByUser,
 );
+router.patch(
+  "/:notificationId/read",
+  protect,
+  controller.markAsRead,
+);
 
 export default router;

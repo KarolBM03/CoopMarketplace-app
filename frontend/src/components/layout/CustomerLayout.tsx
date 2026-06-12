@@ -11,6 +11,7 @@ import {
   Wallet,
   MessageCircle,
   Heart,
+  Handshake,
 } from "lucide-react";
 import { socket } from "../../socket";
 import { useEffect, useState } from "react";
@@ -26,6 +27,7 @@ const navItems = [
   { to: "/customer/marketplace", label: "Marketplace", icon: Store },
   { to: "/customer/orders", label: "Mis Pedidos", icon: ReceiptText },
   { to: "/customer/financing", label: "Financiamientos", icon: CreditCard },
+  { to: "/services", label: "Servicios", icon: Handshake },
   { to: "/customer/wallet", label: "Billetera", icon: Wallet },
   { to: "/customer/shipments", label: "Mis Envios", icon: Truck },
   { to: "/customer/notifications", label: "Notificaciones", icon: Bell },

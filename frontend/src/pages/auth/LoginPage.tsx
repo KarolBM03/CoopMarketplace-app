@@ -28,6 +28,7 @@ export default function LoginPage() {
 
       if (data.user.role === "ADMIN") navigate("/admin");
       else if (data.user.role === "SELLER") navigate("/seller");
+      else if (data.user.role === "SERVICE_PROVIDER") navigate("/provider");
       else navigate("/customer");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error al iniciar sesion");
@@ -63,12 +64,11 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
             <div>
               <input
-                type="email"
-                placeholder="Correo electronico"
-                {...register("email")}
+                placeholder="Cedula o correo electronico"
+                {...register("identifier")}
                 className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 outline-none focus:border-emerald-500"
               />
-              <FieldError message={errors.email?.message} />
+              <FieldError message={errors.identifier?.message} />
             </div>
 
             <div>
@@ -93,7 +93,7 @@ export default function LoginPage() {
           <div className="mt-4 flex justify-start">
             <Link
               to="/forgot-password"
-              state={{ email: watch("email") }}
+              state={{ email: watch("identifier")?.includes("@") ? watch("identifier") : "" }}
               className="text-sm font-bold text-emerald-600 hover:text-emerald-500"
             >
               Olvidaste tu contrasena?

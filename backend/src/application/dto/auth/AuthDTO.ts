@@ -5,7 +5,7 @@ export interface RegisterUserDTO {
   email: string;
   password: string;
   phone?: string;
-  role?: "CUSTOMER" | "SELLER" | "ADMIN";
+  role?: "CUSTOMER" | "SELLER" | "SERVICE_PROVIDER" | "ADMIN";
   acceptedTerms?: boolean;
   storeName?: string;
   mainCategory?: string;

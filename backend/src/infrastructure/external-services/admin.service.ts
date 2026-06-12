@@ -479,7 +479,9 @@ export const rejectSeller = async (userId: string, actorId?: string) => {
 export const getSellers = async () => {
   return await prisma.user.findMany({
     where: {
-      role: "SELLER",
+      role: {
+        in: ["SELLER", "SERVICE_PROVIDER"],
+      },
     },
     select: {
       id: true,

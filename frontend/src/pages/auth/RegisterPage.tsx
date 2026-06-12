@@ -33,9 +33,15 @@ export default function RegisterPage() {
     try {
       let finalIdentityImageUrl = "";
 
-      if (values.role === "SELLER" && identityFile) {
+      if (
+        (values.role === "SELLER" || values.role === "SERVICE_PROVIDER") &&
+        identityFile
+      ) {
         finalIdentityImageUrl = await uploadImage(identityFile);
       }
+
+      const isBusinessAccount =
+        values.role === "SELLER" || values.role === "SERVICE_PROVIDER";
 
       await registerUser({
         fullName: values.fullName,
@@ -45,13 +51,11 @@ export default function RegisterPage() {
         phone: values.phone,
         documentId: values.documentId,
         acceptedTerms: values.acceptedTerms,
-        storeName: values.role === "SELLER" ? values.storeName : undefined,
-        mainCategory:
-          values.role === "SELLER" ? values.mainCategory : undefined,
-        city: values.role === "SELLER" ? values.city : undefined,
-        bankAccount: values.role === "SELLER" ? values.bankAccount : undefined,
-        identityImageUrl:
-          values.role === "SELLER" ? finalIdentityImageUrl : undefined,
+        storeName: isBusinessAccount ? values.storeName : undefined,
+        mainCategory: isBusinessAccount ? values.mainCategory : undefined,
+        city: isBusinessAccount ? values.city : undefined,
+        bankAccount: isBusinessAccount ? values.bankAccount : undefined,
+        identityImageUrl: isBusinessAccount ? finalIdentityImageUrl : undefined,
       });
 
       navigate("/verify-otp", {
@@ -89,10 +93,10 @@ export default function RegisterPage() {
             Crear cuenta
           </h2>
           <p className="mt-2 text-slate-500">
-            Elige si quieres comprar o vender productos.
+            Elige si quieres comprar, vender productos u ofrecer servicios.
           </p>
 
-          <div className="mb-5 mt-8 grid grid-cols-2 gap-4">
+          <div className="mb-5 mt-8 grid gap-4 sm:grid-cols-3">
             <RoleButton
               active={role === "CUSTOMER"}
               label="Comprador"
@@ -105,6 +109,13 @@ export default function RegisterPage() {
               label="Vendedor"
               onClick={() =>
                 setValue("role", "SELLER", { shouldValidate: true })
+              }
+            />
+            <RoleButton
+              active={role === "SERVICE_PROVIDER"}
+              label="Proveedor"
+              onClick={() =>
+                setValue("role", "SERVICE_PROVIDER", { shouldValidate: true })
               }
             />
           </div>
@@ -144,15 +155,23 @@ export default function RegisterPage() {
               {...register("confirmPassword")}
             />
 
-            {role === "SELLER" && (
+            {(role === "SELLER" || role === "SERVICE_PROVIDER") && (
               <div className="grid gap-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
                 <FormInput
-                  placeholder="Nombre de la tienda"
+                  placeholder={
+                    role === "SERVICE_PROVIDER"
+                      ? "Nombre del negocio de servicios"
+                      : "Nombre de la tienda"
+                  }
                   error={errors.storeName?.message}
                   {...register("storeName")}
                 />
                 <FormInput
-                  placeholder="Categoria principal"
+                  placeholder={
+                    role === "SERVICE_PROVIDER"
+                      ? "Categoria principal del servicio"
+                      : "Categoria principal"
+                  }
                   error={errors.mainCategory?.message}
                   {...register("mainCategory")}
                 />

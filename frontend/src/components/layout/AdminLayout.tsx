@@ -10,6 +10,7 @@ import {
   Users,
   MessageCircle,
   Folder,
+  Handshake,
 } from "lucide-react";
 import { useEffect } from "react";
 import { socket } from "../../socket";
@@ -24,6 +25,7 @@ const navItems = [
   { to: "/admin/sellers", label: "Vendedores", icon: ShieldCheck },
   { to: "/admin/financings", label: "Financiamientos", icon: CreditCard },
   { to: "/admin/reports", label: "Reportes", icon: FileText },
+  { to: "/admin/services", label: "Servicios", icon: Handshake },
   { to: "/admin/cooperative", label: "Cooperativa", icon: Landmark },
   { to: "/admin/chats", label: "Chats", icon: MessageCircle },
   { to: "/admin/delivery-proofs", label: "Evidencias", icon: Folder },

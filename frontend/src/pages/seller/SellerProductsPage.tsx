@@ -20,6 +20,7 @@ export default function SellerProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [search, setSearch] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -70,9 +71,11 @@ export default function SellerProductsPage() {
     if (!user) return toast("Debes iniciar sesion");
 
     try {
+      setIsSaving(true);
       let finalImageUrl = form.imageUrl;
 
       if (imageFile) {
+        toast.loading("Subiendo imagen...", { id: "product-save" });
         finalImageUrl = await uploadImage(imageFile);
       }
 
@@ -92,20 +95,30 @@ export default function SellerProductsPage() {
       };
 
       if (editingProduct) {
+        toast.loading("La IA esta revisando imagen y titulo...", {
+          id: "product-save",
+        });
         await updateProduct(editingProduct.id, payload);
-        toast.success("Producto actualizado");
+        toast.success("Producto actualizado", { id: "product-save" });
       } else {
+        toast.loading("La IA esta revisando imagen y titulo...", {
+          id: "product-save",
+        });
         await createProduct({
           ...payload,
           sellerId: user.id,
         });
-        toast.success("Producto creado");
+        toast.success("Producto creado", { id: "product-save" });
       }
 
       resetForm();
       await loadProducts();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error guardando producto");
+      toast.error(error.response?.data?.message || "Error guardando producto", {
+        id: "product-save",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -243,9 +256,12 @@ export default function SellerProductsPage() {
             className="h-12 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-2 text-sm font-semibold xl:col-span-2"
           />
 
-          <button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-500">
+          <button
+            disabled={isSaving}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
             <Plus className="h-4 w-4" />
-            {editingProduct ? "Guardar" : "Publicar"}
+            {isSaving ? "Revisando..." : editingProduct ? "Guardar" : "Publicar"}
           </button>
         </form>
       </section>

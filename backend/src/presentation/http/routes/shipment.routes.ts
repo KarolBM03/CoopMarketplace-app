@@ -62,11 +62,4 @@ router.patch(
 
 router.get("/proofs/admin", authorize("ADMIN"), getShipmentProofsController);
 
-router.post(
-  "/:shipmentId/proof",
-  protect,
-  authorize("SELLER", "ADMIN"),
-  submitShipmentProofController,
-);
-
 export default router;

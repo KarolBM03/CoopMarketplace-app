@@ -204,7 +204,7 @@ export const createCooperativeMember = async (data: {
   email: string;
   phone?: string;
   identification: string;
-  role: "CUSTOMER" | "SELLER" | "ADMIN";
+  role: "CUSTOMER" | "SELLER" | "SERVICE_PROVIDER" | "ADMIN";
 }) =>
   cooperativeRequest<unknown>("/api/Socios", "POST", {
     nombreCompleto: data.fullName,

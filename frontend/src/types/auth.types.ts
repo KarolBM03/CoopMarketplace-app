@@ -3,7 +3,7 @@ export interface User {
   fullName: string;
   email: string;
   phone?: string | null;
-  role: "CUSTOMER" | "SELLER" | "ADMIN";
+  role: "CUSTOMER" | "SELLER" | "SERVICE_PROVIDER" | "ADMIN";
   sellerStatus?: "PENDING" | "APPROVED" | "REJECTED";
   storeName?: string | null;
 }

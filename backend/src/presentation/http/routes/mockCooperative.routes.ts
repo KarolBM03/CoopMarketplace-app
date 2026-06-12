@@ -5,7 +5,17 @@ const router = Router();
 
 const MOCK_TOKEN = "mock-coop-token";
 
-const mockMembers = [
+router.use((req, res, next) => {
+  if (process.env.COOP_MOCK_ENABLED !== "true") {
+    return res.status(404).json({
+      message: "Mock de cooperativa deshabilitado",
+    });
+  }
+
+  return next();
+});
+
+const mockMembers: any[] = [
   {
     id: 1001,
     nombre: "Cliente",
@@ -59,7 +69,12 @@ const requireMockApiKey = (req: Request, res: Response, next: NextFunction) => {
   const expectedKey = process.env.COOP_MOCK_API_KEY || process.env.COOP_API_KEY;
 
   if (!expectedKey) {
-    return next();
+    return res.status(503).json({
+      succeeded: false,
+      message: "COOP_MOCK_API_KEY o COOP_API_KEY es requerida",
+      data: null,
+      errors: ["MISSING_MOCK_API_KEY"],
+    });
   }
 
   const receivedKey = req.header("x-api-key");
@@ -158,7 +173,26 @@ router.post("/api/Socios", (req, res) => {
     memberNumber: `MOCK-SOCIO-${id}`,
     esElegibleParaPrestamo: true,
     montoMaximoPrestamo: 150000,
+    calificacionCrediticia: "A",
+    tieneRestriccionMonto: false,
+    cantidadPrestamosActivos: 0,
+    montoTotalPrestamos: 0,
   };
+
+  const existingMember = mockMembers.find(
+    (item) => item.identificacion === member.identificacion,
+  );
+
+  if (existingMember) {
+    return res.json({
+      succeeded: true,
+      message: "Socio mock ya existia",
+      errors: [],
+      data: existingMember,
+    });
+  }
+
+  mockMembers.push(member);
 
   return res.status(201).json({
     succeeded: true,

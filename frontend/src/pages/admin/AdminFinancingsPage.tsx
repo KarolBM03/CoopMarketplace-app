@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
-import {
-  getAdminFinancings,
-  cooperativeApproveFinancing,
-  cooperativeRejectFinancing,
-} from "../../services/financing.service";
-import toast from "react-hot-toast";
+import { getAdminFinancings } from "../../services/financing.service";
+import { getCooperativeHealth } from "../../services/cooperative.service";
 import { statusLabel } from "../../utils/statusLabels";
 
 export default function AdminFinancingsPage() {
@@ -13,13 +9,13 @@ export default function AdminFinancingsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [coopHealth, setCoopHealth] = useState<any>(null);
 
   const loadFinancings = async () => {
     setLoading(true);
 
     try {
       const data = await getAdminFinancings(page, 6);
-
       setFinancings(data.financings || []);
       setTotalPages(data.pagination?.totalPages || 1);
       setTotal(data.pagination?.total || 0);
@@ -30,20 +26,37 @@ export default function AdminFinancingsPage() {
 
   useEffect(() => {
     loadFinancings();
+    getCooperativeHealth()
+      .then(setCoopHealth)
+      .catch(() => setCoopHealth(null));
   }, [page]);
-
-  const canAdminReview = (status: string) =>
-    status === "SENT_TO_COOPERATIVE" || status === "UNDER_REVIEW";
 
   return (
     <div className="p-8">
       <p className="text-sm font-bold uppercase tracking-wide text-emerald-600">
-        COOPERATIVA
+        Cooperativa
       </p>
 
       <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
         Solicitudes de financiamiento
       </h1>
+
+      <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-black text-emerald-800">
+              CoopMarket no aprueba ni cobra prestamos.
+            </p>
+            <p className="mt-1 text-sm font-semibold text-emerald-700">
+              CoopHispanica valida el socio, aprueba, envia contrato y cobra.
+              Este panel muestra el seguimiento operativo de cada solicitud.
+            </p>
+          </div>
+          <span className="rounded-full bg-white px-4 py-2 text-xs font-black text-emerald-700">
+            {coopHealth?.enabled ? "Integracion activa" : "Integracion no activa"}
+          </span>
+        </div>
+      </div>
 
       <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-bold text-slate-500">
@@ -53,7 +66,7 @@ export default function AdminFinancingsPage() {
         </p>
 
         <p className="text-sm font-black text-slate-700">
-          Página {page} de {totalPages}
+          Pagina {page} de {totalPages}
         </p>
       </div>
 
@@ -70,9 +83,8 @@ export default function AdminFinancingsPage() {
             <h2 className="text-xl font-black text-slate-800">
               No hay solicitudes de financiamiento
             </h2>
-
             <p className="mt-2 text-sm font-semibold text-slate-500">
-              Cuando un cliente solicite financiamiento, aparecerá aquí.
+              Cuando un cliente solicite financiamiento, aparecera aqui.
             </p>
           </div>
         ) : (
@@ -81,12 +93,11 @@ export default function AdminFinancingsPage() {
               key={financing.id}
               className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
             >
-              <div className="flex justify-between gap-6">
+              <div className="flex flex-col justify-between gap-6 lg:flex-row">
                 <div>
                   <h2 className="text-xl font-black text-slate-950">
                     {financing.customer?.fullName}
                   </h2>
-
                   <p className="text-sm text-slate-500">
                     {financing.customer?.email}
                   </p>
@@ -95,47 +106,41 @@ export default function AdminFinancingsPage() {
                     <p>
                       <b>Producto:</b> {financing.product?.title}
                     </p>
-
                     <p>
-                      <b>Cédula:</b> {financing.cedula || "No registrada"}
+                      <b>Cedula:</b> {financing.cedula || "No registrada"}
                     </p>
-
+                    <p>
+                      <b>Solicitud Coop:</b>{" "}
+                      {financing.externalLoanId || "Pendiente"}
+                    </p>
+                    <p>
+                      <b>Estado Coop:</b>{" "}
+                      {financing.externalStatus || "Pendiente"}
+                    </p>
                     <p>
                       <b>Ingresos:</b> RD$
                       {(Number(financing.income) || 0).toLocaleString()}
                     </p>
-
                     <p>
                       <b>Empresa:</b> {financing.company || "No registrada"}
                     </p>
-
                     <p>
-                      <b>Teléfono:</b> {financing.phone || "No registrado"}
+                      <b>Telefono:</b> {financing.phone || "No registrado"}
                     </p>
-
                     <p>
-                      <b>Dirección:</b> {financing.address || "No registrada"}
+                      <b>Direccion:</b> {financing.address || "No registrada"}
                     </p>
-
                     <p>
-                      <b>Inicial:</b> RD$
-                      {(Number(financing.downPayment) || 0).toLocaleString()}
+                      <b>Monto solicitado:</b> RD$
+                      {(Number(financing.totalAmount) || 0).toLocaleString()}
                     </p>
-
                     <p>
                       <b>Meses:</b> {financing.months}
                     </p>
-
                     <p>
                       <b>Cuota estimada:</b> RD$
                       {(Number(financing.monthlyPayment) || 0).toLocaleString()}
                     </p>
-
-                    {financing.externalStatus && (
-                      <p>
-                        <b>Estado externo:</b> {financing.externalStatus}
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -144,59 +149,38 @@ export default function AdminFinancingsPage() {
                 </span>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                {canAdminReview(financing.status) ? (
-                  <>
-                    <button
-                      onClick={async () => {
-                        try {
-                          await cooperativeApproveFinancing(financing.id);
-
-                          toast.success(
-                            "Financiamiento aprobado por CoopHispánica",
-                          );
-
-                          await loadFinancings();
-                        } catch (error: any) {
-                          toast.error(
-                            error.response?.data?.message ||
-                              "Error aprobando financiamiento",
-                          );
-                        }
-                      }}
-                      className="rounded-xl bg-emerald-600 px-5 py-3 font-black text-white hover:bg-emerald-500"
-                    >
-                      Aprobar
-                    </button>
-
-                    <button
-                      onClick={async () => {
-                        try {
-                          await cooperativeRejectFinancing(
-                            financing.id,
-                            "Solicitud rechazada por CoopHispánica",
-                          );
-
-                          toast.success("Financiamiento rechazado");
-
-                          await loadFinancings();
-                        } catch (error: any) {
-                          toast.error(
-                            error.response?.data?.message ||
-                              "Error rechazando financiamiento",
-                          );
-                        }
-                      }}
-                      className="rounded-xl bg-red-600 px-5 py-3 font-black text-white hover:bg-red-500"
-                    >
-                      Rechazar
-                    </button>
-                  </>
-                ) : (
-                  <p className="rounded-xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-500">
-                    Solicitud procesada
-                  </p>
-                )}
+              <div className="mt-6 rounded-2xl bg-slate-50 p-4">
+                <p className="mb-3 text-xs font-black uppercase text-slate-400">
+                  Seguimiento de cooperativa
+                </p>
+                <div className="grid gap-3 text-sm font-semibold text-slate-600 md:grid-cols-3">
+                  <div className="rounded-xl bg-white p-4 ring-1 ring-slate-100">
+                    <p className="text-xs font-black uppercase text-slate-400">
+                      Solicitud externa
+                    </p>
+                    <p className="mt-2 text-slate-900">
+                      {financing.externalLoanId || "Pendiente de envio"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-white p-4 ring-1 ring-slate-100">
+                    <p className="text-xs font-black uppercase text-slate-400">
+                      Estado externo
+                    </p>
+                    <p className="mt-2 text-slate-900">
+                      {financing.externalStatus || "En espera"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-white p-4 ring-1 ring-slate-100">
+                    <p className="text-xs font-black uppercase text-slate-400">
+                      Proximo paso
+                    </p>
+                    <p className="mt-2 text-slate-900">
+                      {financing.externalLoanId
+                        ? "Esperar respuesta de CoopHispanica"
+                        : "Enviar solicitud a CoopHispanica"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           ))

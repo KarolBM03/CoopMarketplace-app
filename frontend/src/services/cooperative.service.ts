@@ -137,3 +137,15 @@ export const getCooperativeInterbankTransactions = async (
   });
   return response.data;
 };
+
+export const simulateCooperativeFinancingEvent = async (
+  financingId: string,
+  event: string,
+) => {
+  const response = await api.post(
+    `/cooperative/financings/${financingId}/simulate-event`,
+    { event },
+  );
+
+  return response.data;
+};

@@ -18,6 +18,7 @@ import {
   PayCooperativeLoanUseCase,
   TestCooperativeLoginUseCase,
 } from "../../../../application/use-cases/cooperative/CooperativeUseCases";
+import { simulateCooperativeEventForFinancing } from "../../../../infrastructure/external-services/cooperative-webhook.service";
 
 const handleError = (res: Response, error: unknown) =>
   res.status(400).json({
@@ -206,6 +207,19 @@ export class CooperativeController {
         await new GetCooperativeInterbankTransactionsUseCase().execute(
           req.query,
         );
+
+      return res.json(data);
+    } catch (error) {
+      return handleError(res, error);
+    }
+  };
+
+  simulateFinancingEvent = async (req: Request, res: Response) => {
+    try {
+      const data = await simulateCooperativeEventForFinancing({
+        financingId: String(req.params.financingId),
+        event: req.body.event,
+      });
 
       return res.json(data);
     } catch (error) {

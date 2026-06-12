@@ -31,3 +31,9 @@ export const getNotificationsByUser = async (userId: string) => {
 
   return data.notifications;
 };
+
+export const markNotificationAsRead = async (notificationId: string) => {
+  const response = await api.patch(`/notifications/${notificationId}/read`);
+
+  return response.data;
+};

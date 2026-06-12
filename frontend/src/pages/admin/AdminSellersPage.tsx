@@ -55,20 +55,20 @@ export default function AdminSellersPage() {
   const handleApprove = async (userId: string) => {
     try {
       await approveSeller(userId);
-      toast.success("Vendedor aprobado");
+      toast.success("Cuenta aprobada");
       loadSellers();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error aprobando vendedor");
+      toast.error(error.response?.data?.message || "Error aprobando cuenta");
     }
   };
 
   const handleReject = async (userId: string) => {
     try {
       await rejectSeller(userId);
-      toast.success("Vendedor rechazado");
+      toast.success("Cuenta rechazada");
       loadSellers();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error rechazando vendedor");
+      toast.error(error.response?.data?.message || "Error rechazando cuenta");
     }
   };
 
@@ -77,10 +77,10 @@ export default function AdminSellersPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-wide text-emerald-600">
-            Vendedores
+            Vendedores y proveedores
           </p>
           <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
-            Solicitudes de vendedores
+            Solicitudes de negocios
           </h1>
         </div>
 
@@ -106,7 +106,7 @@ export default function AdminSellersPage() {
           </div>
         ) : sellers.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm font-semibold text-slate-500 shadow-sm">
-            No hay vendedores registrados.
+            No hay negocios registrados.
           </div>
         ) : (
           sellers.map((seller) => (
@@ -127,6 +127,11 @@ export default function AdminSellersPage() {
                           {seller.fullName}
                         </h2>
                         <StatusBadge status={seller.sellerStatus} />
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                          {seller.role === "SERVICE_PROVIDER"
+                            ? "Proveedor de servicios"
+                            : "Vendedor"}
+                        </span>
                       </div>
 
                       <p className="mt-1 break-all text-sm font-semibold text-slate-500">

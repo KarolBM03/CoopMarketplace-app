@@ -28,7 +28,7 @@ export const moneySchema = z.coerce
   .positive("El monto debe ser mayor que 0");
 
 export const loginSchema = z.object({
-  email: emailSchema,
+  identifier: z.string().trim().min(1, "La cedula o correo es requerido"),
   password: z.string().min(1, "La contrasena es requerida"),
 });
 
@@ -39,7 +39,7 @@ export const registerSchema = z
     phone: phoneSchema,
     password: strongPasswordSchema,
     confirmPassword: z.string(),
-    role: z.enum(["CUSTOMER", "SELLER"]),
+    role: z.enum(["CUSTOMER", "SELLER", "SERVICE_PROVIDER"]),
     acceptedTerms: z.boolean().refine(Boolean, "Debes aceptar los terminos"),
     storeName: z.string().optional(),
     mainCategory: z.string().optional(),
@@ -56,7 +56,7 @@ export const registerSchema = z
       });
     }
 
-    if (data.role === "SELLER") {
+    if (data.role === "SELLER" || data.role === "SERVICE_PROVIDER") {
       [
         ["storeName", data.storeName],
         ["mainCategory", data.mainCategory],
@@ -67,7 +67,7 @@ export const registerSchema = z
           ctx.addIssue({
             code: "custom",
             path: [field as string],
-            message: "Campo requerido para vendedores",
+            message: "Campo requerido para este tipo de cuenta",
           });
         }
       });

@@ -98,6 +98,10 @@ export class FinancingControllerV2 {
       const callbackSecret = process.env.COOP_CALLBACK_SECRET;
       const signature = req.headers["x-coop-signature"];
 
+      if (!callbackSecret) {
+        return res.status(503).json({ message: "Callback de cooperativa no configurado" });
+      }
+
       if (callbackSecret && signature !== callbackSecret) {
         return res.status(401).json({ message: "Callback no autorizado" });
       }

@@ -7,10 +7,40 @@ const router = Router();
 const controller = new ServiceController();
 
 router.use(protect);
-router.post("/", authorize("CUSTOMER", "ADMIN"), controller.create);
+router.get("/catalog", controller.catalog);
+router.post("/", authorize("CUSTOMER", "SELLER", "ADMIN"), controller.create);
+router.post(
+  "/provider/offerings",
+  authorize("SERVICE_PROVIDER", "ADMIN"),
+  controller.createOffering,
+);
+router.get(
+  "/provider/offerings",
+  authorize("SERVICE_PROVIDER", "ADMIN"),
+  controller.providerOfferings,
+);
+router.patch(
+  "/provider/offerings/:offeringId",
+  authorize("SERVICE_PROVIDER", "ADMIN"),
+  controller.updateOffering,
+);
+router.get(
+  "/provider/requests",
+  authorize("SERVICE_PROVIDER", "ADMIN"),
+  controller.providerRequests,
+);
+router.post(
+  "/provider/requests/:requestId/accept",
+  authorize("SERVICE_PROVIDER", "ADMIN"),
+  controller.acceptRequest,
+);
+router.patch(
+  "/provider/requests/:requestId/status",
+  authorize("SERVICE_PROVIDER", "ADMIN"),
+  controller.updateProviderRequestStatus,
+);
 router.get(
   "/customer/:customerId",
-  authorize("CUSTOMER", "ADMIN"),
   controller.myRequests,
 );
 router.get("/admin", authorize("ADMIN"), controller.adminRequests);
